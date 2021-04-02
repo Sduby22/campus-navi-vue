@@ -71,23 +71,25 @@
       >
         - 途径点</el-button
       >
-      <el-input
-        v-for="(x, index) in passby"
-        :key="index"
-        class="mgbtm el-input"
-        :placeholder="'途径点' + (index + 1)"
-        v-model="passby[index].value"
-        @focus="currentInput = passby[index]"
-        clearable
-        suffix-icon="el-icon-top-right"
-      >
-        <template #append>
-          <el-button
-            icon="el-icon-minus"
-            @click="passby.splice(index, 1)"
-          ></el-button>
-        </template>
-      </el-input>
+      <div class="passby-scroll">
+        <el-input
+          v-for="(x, index) in passby"
+          :key="index"
+          class="mgbtm el-input"
+          :placeholder="'途径点' + (index + 1)"
+          v-model="passby[index].value"
+          @focus="currentInput = passby[index]"
+          clearable
+          suffix-icon="el-icon-top-right"
+        >
+          <template #append>
+            <el-button
+              icon="el-icon-minus"
+              @click="passby.splice(index, 1)"
+            ></el-button>
+          </template>
+        </el-input>
+      </div>
       <el-input
         class="el-input mgbtm"
         placeholder="终点"
@@ -196,5 +198,9 @@ li {
 .close-btn {
   position: absolute;
   right: 20px;
+}
+.passby-scroll {
+  overflow-y: auto;
+  max-height: 30vh;
 }
 </style>
