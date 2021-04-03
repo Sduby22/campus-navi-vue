@@ -5,6 +5,7 @@
       placeholder="请输入地点"
       v-model="dest.value"
       @focus="currentInput = dest"
+      @blur="checkInput"
       clearable
       suffix-icon="el-icon-search"
     >
@@ -50,6 +51,7 @@
         placeholder="起点"
         v-model="begin.value"
         @focus="currentInput = begin"
+        @input="checkInput"
         clearable
         suffix-icon="el-icon-search"
       />
@@ -79,6 +81,7 @@
           :placeholder="'途径点' + (index + 1)"
           v-model="passby[index].value"
           @focus="currentInput = passby[index]"
+          @input="checkInput"
           clearable
           suffix-icon="el-icon-top-right"
         >
@@ -95,9 +98,11 @@
         placeholder="终点"
         v-model="dest.value"
         @focus="currentInput = dest"
+        @input="checkInput"
         clearable
         suffix-icon="el-icon-search"
       />
+      <el-button type="primary" :disabled="!checkAllLegal">规划路线</el-button>
     </template>
     <li v-for="(x, index) in stringQuery" :key="index" @click="changeInput(x)">
       <i class="el-icon-location-outline" />{{ x }}
@@ -123,9 +128,11 @@ export default {
       currentInput: {},
       begin: {
         value: "",
+        legal: false,
       },
       dest: {
         value: "",
+        legal: false,
       },
       passby: [],
       route: false,
@@ -139,8 +146,23 @@ export default {
       return arr;
       // return [this.currentInput.value, "aaa"];
     },
+    checkAllLegal() {
+      let res = this.begin.legal && this.dest.legal
+      for (let x of this.passby) {
+        res &&= x.legal
+      }
+      return res
+    }
   },
   methods: {
+    checkInput() {
+      if(this.currentInput.value && (this.currentInput.value === this.stringQuery[0])) {
+        this.currentInput.legal = true
+      }
+      else {
+        this.currentInput.legal = false
+      }
+    },
     invRoute() {
       this.route = !this.route;
       this.currentInput = {};
