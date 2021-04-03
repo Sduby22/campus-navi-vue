@@ -1,11 +1,14 @@
 <template>
+
+
+<!-- Main Card -->
   <div v-show="!route" class="search-input">
     <el-input
       class="el-input"
       placeholder="请输入地点"
       v-model="dest.value"
       @focus="currentInput = dest"
-      @blur="checkInput"
+      @input="checkInput"
       clearable
       suffix-icon="el-icon-search"
     >
@@ -22,7 +25,7 @@
     class="main-card"
     shadow="hover"
     :body-style="searchCard"
-    v-show="currentInput.value && !route"
+    v-show="cardShow && !route"
   >
     <div class="main-card-div">
       <li
@@ -35,6 +38,9 @@
     </div>
   </el-card>
 
+  <show-route/>
+
+<!-- Route Card -->
   <el-card
     class="route-card"
     shadow="always"
@@ -104,13 +110,15 @@
       />
       <el-button type="primary" :disabled="!checkAllLegal">规划路线</el-button>
     </template>
-    <li v-for="(x, index) in stringQuery" :key="index" @click="changeInput(x)">
+    <li v-show="cardShow" v-for="(x, index) in stringQuery" :key="index" @click="changeInput(x)">
       <i class="el-icon-location-outline" />{{ x }}
     </li>
   </el-card>
 </template>
 
 <script>
+import showRoute from './show-route.vue'
+
 export default {
   name: "search-head",
   setup() {
@@ -129,16 +137,21 @@ export default {
       begin: {
         value: "",
         legal: false,
+        selected: false,
       },
       dest: {
         value: "",
         legal: false,
+        selected: false,
       },
       passby: [],
       route: false,
     };
   },
   computed: {
+    cardShow() {
+      return !this.currentInput.selected && this.currentInput.value
+    },
     stringQuery() {
       if (!this.currentInput.value) return null;
       var arr = [];
@@ -156,6 +169,7 @@ export default {
   },
   methods: {
     checkInput() {
+      this.currentInput.selected = false
       if(this.currentInput.value && (this.currentInput.value === this.stringQuery[0])) {
         this.currentInput.legal = true
       }
@@ -169,8 +183,13 @@ export default {
     },
     changeInput(str) {
       this.currentInput.value = str;
+      this.checkInput()
+      this.currentInput.selected = true;
     },
   },
+  components: {
+    'show-route':showRoute
+  }
 };
 </script>
 
