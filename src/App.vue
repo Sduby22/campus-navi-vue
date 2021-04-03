@@ -1,11 +1,15 @@
 <template>
-  <div v-show="!routing">
+  <div class="fixed" style="width:350px" v-show="!routing">
     <search-head @get-route="getRoute"></search-head>
   </div>
-  <show-route :routing="routing" @clear-route="routing=null"/>
+  <show-route class="fixed" :routing="routing" @clear-route="routing=null"/>
+  <div style="position:fixed; top: -20px; left:-8px; z-index: -1">
+  <bupt-map/>
+  </div>
 </template>
 
 <script>
+import BuptMap from './components/bupt-map.vue';
 import SearchHead from './components/search-head.vue';
 import showRoute from './components/show-route'
 
@@ -13,7 +17,8 @@ export default {
   name: "App",
   components: {
     'show-route': showRoute,
-     SearchHead,
+    SearchHead,
+    BuptMap,
   },
   data() {
     return {
@@ -29,9 +34,10 @@ export default {
 </script>
 
 <style>
-searchhead {
-  float: left;
+.fixed {
+  position: fixed;
 }
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
