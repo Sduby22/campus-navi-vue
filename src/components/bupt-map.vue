@@ -14,11 +14,15 @@
     >
     </canvas>
   </div>
+  <div class="block">
+    <el-slider v-model="scale" @change="sliderupdate" :min="0.3" :max="1" :step="0.05" vertical height="200px"> </el-slider>
+  </div>
   <!-- <div class="center">{{ dpr }}</div> -->
 </template>
 
 <script>
 import buptimg from "../assets/bupt.png";
+import logo from "../assets/logo.png";
 
 export default {
   name: "bupt-map",
@@ -38,7 +42,7 @@ export default {
     let img1 = new Image();
     let img2 = new Image();
     img1.src = buptimg;
-    img2.src = buptimg;
+    img2.src = logo;
     return {
       img1,
       img2,
@@ -46,6 +50,7 @@ export default {
   },
   data() {
     return {
+      scale: 1,
       dpr: window.devicePixelRatio,
       imgs: [
         {
@@ -53,6 +58,11 @@ export default {
           newcoords: [0, 0],
           img: this.img1,
         },
+        // {
+        //   lastcoords: [100,100],
+        //   newcoords: [100,100],
+        //   img: this.img2
+        // }
       ],
       store: {
         X1: null,
@@ -67,9 +77,16 @@ export default {
     };
   },
   methods: {
-    // mouseWheel(event) {
-
-    // },
+    mouseWheel(event) {
+      for (let img of this.imgs) {
+        img.newcoords[0] = img.lastcoords[0];
+        img.newcoords[1] = img.lastcoords[1];
+      }
+      this.scale += event.deltaY < 0 ? 0.05 : -0.05;
+      if (this.scale > 1) this.scale = 1;
+      else if (this.scale < 0.5) this.scale = 0.5;
+      this.draw();
+    },
     mouseDown(event) {
       this.ctx.save();
       this.startX = event.offsetX;
@@ -151,22 +168,36 @@ export default {
     canvasResize() {
       this.canvas.height = window.innerHeight;
       this.canvas.width = window.innerWidth;
-      let dpr = window.devicePixelRatio
-      this.canvas.width *= dpr
-      this.canvas.height *= dpr
-      this.ctx.scale(dpr,dpr);
+      let dpr = window.devicePixelRatio;
+      this.canvas.width *= dpr;
+      this.canvas.height *= dpr;
+      this.ctx.scale(dpr, dpr);
       // this.clearCanvas()
       // this.draw()
     },
     draw() {
       this.clearCanvas();
       for (let img of this.imgs) {
-        this.ctx.drawImage(img.img, img.newcoords[0], img.newcoords[1]);
+        let scale = this.scale || 1;
+        this.ctx.drawImage(
+          img.img,
+          img.newcoords[0],
+          img.newcoords[1],
+          img.img.width * scale,
+          img.img.height * scale
+        );
       }
     },
-    update() {
+    sliderupdate() {
+      for (let img of this.imgs) {
+        img.newcoords[0] = img.lastcoords[0];
+        img.newcoords[1] = img.lastcoords[1];
+      }
       this.clearCanvas();
       this.draw();
+    },
+    toRelative([x1, y1], [x2, y2]) {
+      return [x1 - x2, y1 - y2];
     },
   },
 };
@@ -186,5 +217,10 @@ export default {
   position: fixed;
   bottom: 10vh;
   right: 10vh;
+}
+.block {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
 }
 </style>
