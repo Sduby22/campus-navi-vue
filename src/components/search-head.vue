@@ -12,6 +12,7 @@
       clearable
       suffix-icon="el-icon-search"
     >
+    <!-- Route Button -->
       <template #append>
         <el-button
           type="primary"
@@ -31,14 +32,13 @@
       <li
         v-for="(x, index) in stringQuery"
         :key="index"
-        @click="changeInput(x)"
+        @click="changeInput(x), getRoute()"
       >
         <i class="el-icon-location-outline" />{{ x }}
       </li>
     </div>
   </el-card>
 
-  <show-route/>
 
 <!-- Route Card -->
   <el-card
@@ -108,7 +108,7 @@
         clearable
         suffix-icon="el-icon-search"
       />
-      <el-button type="primary" :disabled="!checkAllLegal">规划路线</el-button>
+      <el-button type="primary" :disabled="!checkAllLegal" @click="getRoute">规划路线</el-button>
     </template>
     <li v-show="cardShow" v-for="(x, index) in stringQuery" :key="index" @click="changeInput(x)">
       <i class="el-icon-location-outline" />{{ x }}
@@ -117,10 +117,10 @@
 </template>
 
 <script>
-import showRoute from './show-route.vue'
 
 export default {
   name: "search-head",
+  emits: ['get-route'],
   setup() {
     const searchCard = {
       fontSize: "16px",
@@ -133,9 +133,10 @@ export default {
   },
   data() {
     return {
+      showRouteCard: '',
       currentInput: {},
       begin: {
-        value: "",
+        value: "start",
         legal: false,
         selected: false,
       },
@@ -186,9 +187,12 @@ export default {
       this.checkInput()
       this.currentInput.selected = true;
     },
+    getRoute() {
+      let pass = this.route ? this.passby : []
+      this.$emit('get-route', this.begin, pass, this.dest)
+    }
   },
   components: {
-    'show-route':showRoute
   }
 };
 </script>

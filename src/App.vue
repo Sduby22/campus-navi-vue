@@ -1,15 +1,30 @@
 <template>
-  <searchhead/>
+  <div v-show="!routing">
+    <search-head @get-route="getRoute"></search-head>
+  </div>
+  <show-route :routing="routing" @clear-route="routing=null"/>
 </template>
 
 <script>
-import searchhead from './components/search-head'
+import SearchHead from './components/search-head.vue';
+import showRoute from './components/show-route'
 
 export default {
   name: "App",
   components: {
-    searchhead,
+    'show-route': showRoute,
+     SearchHead,
   },
+  data() {
+    return {
+      routing: null,
+    }
+  },
+  methods: {
+    getRoute() {
+      this.routing = {}
+    }
+  }
 };
 </script>
 
