@@ -80,10 +80,6 @@ export default {
       mainImg: null,
       store: {
         last: null,
-        startX: null,
-        startY: null,
-        X1: null,
-        Y1: null,
         start: null,
       },
       canvas: null,
@@ -93,12 +89,19 @@ export default {
   methods: {
     mouseWheel(event) {
       let img = this.mainImg;
-      img.newcoords[0] = img.lastcoords[0];
-      img.newcoords[1] = img.lastcoords[1];
+      let offset = [event.offsetX, event.offsetY]
+      img.newcoords[0] = (-offset[0]+img.lastcoords[0])/this.scale;
+      img.newcoords[1] = (-offset[1]+img.lastcoords[1])/this.scale;
       this.scale += event.deltaY < 0 ? 0.05 : -0.05;
       if (this.scale > 1) this.scale = 1;
       else if (this.scale < 0.5) this.scale = 0.5;
+      img.newcoords[0] *= this.scale
+      img.newcoords[1] *= this.scale
+      this.ctx.save()
+      this.ctx.translate(offset[0], offset[1])
       this.draw();
+      this.ctx.restore()
+      img.lastcoords = [img.newcoords[0] + offset[0], img.newcoords[1] + offset[1]]
     },
     logStart(e) {
       this.ctx.save();
@@ -163,6 +166,10 @@ export default {
       );
       let nw = this.mainImg.newcoords
       this.ctx.fillRect(nw[0], nw[1], 10, 10)
+      if (this.start) {
+        let c = this.toCanvas([ this.start[0] - this.mainImg.lastcoords[0], this.start[1] - this.mainImg.lastcoords[1] ])
+        this.ctx.fillRect(c[0], c[1], 10, 10)
+      }
     },
     sliderupdate() {
       let img = this.mainImg;
@@ -172,7 +179,9 @@ export default {
       this.draw();
     },
     toCanvas([x,y]) {
-      x,y
+      let nw = this.mainImg.newcoords
+      let sc = this.scale
+      return [nw[0] + x*sc,nw[1] + y*sc]
     },
     toRelative([x1, y1], [x2, y2]) {
       return [x1 - x2, y1 - y2];
