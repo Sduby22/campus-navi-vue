@@ -18,8 +18,8 @@
     <el-slider
       v-model="scale"
       @change="sliderupdate"
-      :min="0.3"
-      :max="1"
+      :min="minScale"
+      :max="maxScale"
       :step="0.05"
       vertical
       height="200px"
@@ -52,11 +52,15 @@ export default {
     };
   },
   setup() {
+    const minScale = 0.3
+    const maxScale = 1.4
     let img1 = new Image();
     let img2 = new Image();
     img1.src = buptimg;
     img2.src = logo;
     return {
+      minScale,
+      maxScale,
       img1,
       img2,
     };
@@ -93,8 +97,8 @@ export default {
       img.newcoords[0] = (-offset[0]+img.lastcoords[0])/this.scale;
       img.newcoords[1] = (-offset[1]+img.lastcoords[1])/this.scale;
       this.scale += event.deltaY < 0 ? 0.05 : -0.05;
-      if (this.scale > 1) this.scale = 1;
-      else if (this.scale < 0.5) this.scale = 0.5;
+      if (this.scale > this.maxScale) this.scale = this.maxScale;
+      else if (this.scale < this.minScale) this.scale = this.minScale;
       img.newcoords[0] *= this.scale
       img.newcoords[1] *= this.scale
       this.ctx.save()

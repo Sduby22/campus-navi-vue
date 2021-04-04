@@ -11,7 +11,7 @@
 <script>
 import BuptMap from './components/bupt-map.vue';
 import SearchHead from './components/search-head.vue';
-import showRoute from './components/show-route'
+import showRoute from './components/show-route.vue'
 
 export default {
   name: "App",
