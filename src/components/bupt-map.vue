@@ -125,7 +125,6 @@ export default {
       img.newcoords[0] *= scale;
       img.newcoords[1] *= scale;
       this.ctx.save();
-      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
       this.ctx.translate(center[0], center[1]);
       this.draw();
       this.ctx.restore();
@@ -142,12 +141,13 @@ export default {
       this.zoom(offset, scale);
     },
     logStart(e) {
-      this.ctx.save();
       let start = [];
       if (e.touches) {
         e.preventDefault();
         start = [e.touches[0].pageX, e.touches[0].pageY];
-      } else start = [e.offsetX, e.offsetY];
+      } else if (e.button == 0) start = [e.offsetX, e.offsetY];
+      else return
+      this.ctx.save();
       this.start = start;
       this.last = start;
       let img = this.mainImg;
