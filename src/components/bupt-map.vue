@@ -7,7 +7,7 @@
       @mousemove="logMove"
       @mouseup="logEnd"
       @mouseleave="logEnd"
-      @mousewheel="mouseWheel"
+      @wheel="mouseWheel"
       @touchstart="logStart"
       @touchmove="logMove"
       @touchend="logEnd"
