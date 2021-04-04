@@ -16,7 +16,7 @@
   </div>
   <div class="block">
     <el-slider
-      v-model="scale"
+      v-model="slidescale"
       @change="sliderupdate"
       :min="minScale"
       :max="maxScale"
@@ -35,11 +35,11 @@ import logo from "../assets/logo.png";
 
 export default {
   props: {
-    routing: Object
+    routing: Object,
   },
   name: "bupt-map",
   mounted() {
-    this.mainImg = this.imgs[0]
+    this.mainImg = this.imgs[0];
     this.canvas = document.getElementById("map-canvas");
     this.ctx = this.canvas.getContext("2d");
     this.img1.onload = () => {
@@ -59,14 +59,15 @@ export default {
     img1.src = buptimg;
     img2.src = logo;
     return {
-      minScale,
-      maxScale,
       img1,
       img2,
+      maxScale,
+      minScale,
     };
   },
   data() {
     return {
+      slidescale: 1,
       scale: 1,
       dpr: window.devicePixelRatio,
       imgs: [
@@ -81,37 +82,43 @@ export default {
           img: this.img2,
         },
       ],
-      mainImg: null,
-      store: {
-        last: null,
-        start: null,
-      },
-      canvas: null,
-      ctx: null,
+      lastclick: [0,0]
     };
   },
   methods: {
-    mouseWheel(event) {
+    zoom(center, scale) {
       let img = this.mainImg;
-      let offset = [event.offsetX, event.offsetY]
-      img.newcoords[0] = (-offset[0]+img.lastcoords[0])/this.scale;
-      img.newcoords[1] = (-offset[1]+img.lastcoords[1])/this.scale;
-      this.scale += event.deltaY < 0 ? 0.05 : -0.05;
-      if (this.scale > this.maxScale) this.scale = this.maxScale;
-      else if (this.scale < this.minScale) this.scale = this.minScale;
-      img.newcoords[0] *= this.scale
-      img.newcoords[1] *= this.scale
-      this.ctx.save()
-      this.ctx.translate(offset[0], offset[1])
+      console.log(center);
+      img.newcoords[0] = (-center[0] + img.lastcoords[0]) / this.scale;
+      img.newcoords[1] = (-center[1] + img.lastcoords[1]) / this.scale;
+      this.scale = scale;
+      img.newcoords[0] *= scale;
+      img.newcoords[1] *= scale;
+      this.ctx.save();
+      this.ctx.setTransform(1,0,0,1,0,0)
+      this.ctx.translate(center[0], center[1]);
       this.draw();
-      this.ctx.restore()
-      img.lastcoords = [img.newcoords[0] + offset[0], img.newcoords[1] + offset[1]]
+      this.ctx.restore();
+      img.lastcoords = [
+        img.newcoords[0] + center[0],
+        img.newcoords[1] + center[1],
+      ];
+    },
+    mouseWheel(event) {
+      let offset = [event.offsetX, event.offsetY];
+      let scale = this.scale + (event.deltaY < 0 ? 0.05 : -0.05);
+      if (scale > this.maxScale) scale = this.maxScale;
+      else if (scale < this.minScale) scale = this.minScale;
+      console.log(offset);
+      this.zoom(offset, scale);
     },
     logStart(e) {
       this.ctx.save();
       let start = [];
-      if (e.touches) start = [e.touches[0].pageX, e.touches[0].pageY];
-      else start = [e.offsetX, e.offsetY];
+      if (e.touches) {
+        e.preventDefault();
+        start = [e.touches[0].pageX, e.touches[0].pageY];
+      } else start = [e.offsetX, e.offsetY];
       this.start = start;
       this.last = start;
       let img = this.mainImg;
@@ -123,21 +130,21 @@ export default {
         let offset = [];
         if (e.touches) offset = [e.touches[0].pageX, e.touches[0].pageY];
         else offset = [e.offsetX, e.offsetY];
-        let delta = this.toRelative(offset, this.last);
-        this.last = offset;
-        this.ctx.translate(delta[0], delta[1]);
-        this.draw();
+          let delta = this.toRelative(offset, this.last);
+          this.last = offset;
+          this.ctx.translate(delta[0], delta[1]);
+          this.draw();
       }
     },
-    logEnd() {
+    logEnd(e) {
       if (this.start) {
-        // let offset = [];
-        // if (e.touches) offset = [e.touches[0].pageX, e.touches[0].pageY];
-        // else offset = [e.offsetX, e.offsetY];
+        let offset = this.last;
+        this.lastclick = offset;
         let img = this.mainImg;
         let arr = this.toRelative(this.last, this.start);
         img.lastcoords[0] += arr[0];
         img.lastcoords[1] += arr[1];
+        if (!e.touches || e.touches.length===0)
         this.start = null;
         this.ctx.restore();
       }
@@ -168,27 +175,31 @@ export default {
         img.img.width * scale,
         img.img.height * scale
       );
-      let nw = this.mainImg.newcoords
-      this.ctx.fillRect(nw[0], nw[1], 10, 10)
+      let nw = this.mainImg.newcoords;
+      this.ctx.fillRect(nw[0], nw[1], 10, 10);
       if (this.start) {
-        let c = this.toCanvas([ this.start[0] - this.mainImg.lastcoords[0], this.start[1] - this.mainImg.lastcoords[1] ])
-        this.ctx.fillRect(c[0], c[1], 10, 10)
+        let c = this.toCanvas([
+          (this.start[0] - this.mainImg.lastcoords[0])/this.scale,
+          (this.start[1] - this.mainImg.lastcoords[1])/this.scale
+        ]);
+        this.ctx.fillRect(c[0], c[1], 10, 10);
       }
     },
     sliderupdate() {
-      let img = this.mainImg;
-      img.newcoords[0] = img.lastcoords[0];
-      img.newcoords[1] = img.lastcoords[1];
-      this.clearCanvas();
-      this.draw();
+      console.log(this.lastclick);
+      this.zoom(this.lastclick, this.slidescale);
+      this.slidescale = this.scale
     },
-    toCanvas([x,y]) {
-      let nw = this.mainImg.newcoords
-      let sc = this.scale
-      return [nw[0] + x*sc,nw[1] + y*sc]
+    toCanvas([x, y]) {
+      let nw = this.mainImg.newcoords;
+      let sc = this.scale;
+      return [nw[0] + x * sc, nw[1] + y * sc];
     },
     toRelative([x1, y1], [x2, y2]) {
       return [x1 - x2, y1 - y2];
+    },
+    getDistance(p1, p2) {
+      return Math.sqrt(Math.pow((p1[0] - p2[0]), 2) + Math.pow((p1[1] - p2[1]), 2));
     },
   },
 };
