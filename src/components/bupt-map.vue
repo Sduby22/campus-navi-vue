@@ -3,19 +3,28 @@
     <canvas
       class="map_img"
       id="map-canvas"
-      @mousedown="mouseDown"
-      @mousemove="mouseMove"
-      @mouseup="mouseUp"
-      @mouseleave="mouseUp"
+      @mousedown="logStart"
+      @mousemove="logMove"
+      @mouseup="logEnd"
+      @mouseleave="logEnd"
       @mousewheel="mouseWheel"
-      @touchstart="touchStart"
-      @touchmove="touchMove"
-      @touchend="touchEnd"
+      @touchstart="logStart"
+      @touchmove="logMove"
+      @touchend="logEnd"
     >
     </canvas>
   </div>
   <div class="block">
-    <el-slider v-model="scale" @change="sliderupdate" :min="0.3" :max="1" :step="0.05" vertical height="200px"> </el-slider>
+    <el-slider
+      v-model="scale"
+      @change="sliderupdate"
+      :min="0.3"
+      :max="1"
+      :step="0.05"
+      vertical
+      height="200px"
+    >
+    </el-slider>
   </div>
   <!-- <div class="center">{{ dpr }}</div> -->
 </template>
@@ -25,8 +34,12 @@ import buptimg from "../assets/bupt.png";
 import logo from "../assets/logo.png";
 
 export default {
+  props: {
+    routing: Object
+  },
   name: "bupt-map",
   mounted() {
+    this.mainImg = this.imgs[0]
     this.canvas = document.getElementById("map-canvas");
     this.ctx = this.canvas.getContext("2d");
     this.img1.onload = () => {
@@ -58,19 +71,20 @@ export default {
           newcoords: [0, 0],
           img: this.img1,
         },
-        // {
-        //   lastcoords: [100,100],
-        //   newcoords: [100,100],
-        //   img: this.img2
-        // }
+        {
+          lastcoords: [100, 100],
+          newcoords: [100, 100],
+          img: this.img2,
+        },
       ],
+      mainImg: null,
       store: {
-        X1: null,
-        Y1: null,
-        X2: null,
-        Y2: null,
+        last: null,
         startX: null,
         startY: null,
+        X1: null,
+        Y1: null,
+        start: null,
       },
       canvas: null,
       ctx: null,
@@ -78,83 +92,46 @@ export default {
   },
   methods: {
     mouseWheel(event) {
-      for (let img of this.imgs) {
-        img.newcoords[0] = img.lastcoords[0];
-        img.newcoords[1] = img.lastcoords[1];
-      }
+      let img = this.mainImg;
+      img.newcoords[0] = img.lastcoords[0];
+      img.newcoords[1] = img.lastcoords[1];
       this.scale += event.deltaY < 0 ? 0.05 : -0.05;
       if (this.scale > 1) this.scale = 1;
       else if (this.scale < 0.5) this.scale = 0.5;
       this.draw();
     },
-    mouseDown(event) {
+    logStart(e) {
       this.ctx.save();
-      this.startX = event.offsetX;
-      this.startY = event.offsetY;
-      this.X1 = event.offsetX;
-      this.Y1 = event.offsetY;
-      for (let img of this.imgs) {
-        img.newcoords[0] = img.lastcoords[0] - this.X1;
-        img.newcoords[1] = img.lastcoords[1] - this.Y1;
-      }
-      this.ctx.translate(this.X1, this.Y1);
+      let start = [];
+      if (e.touches) start = [e.touches[0].pageX, e.touches[0].pageY];
+      else start = [e.offsetX, e.offsetY];
+      this.start = start;
+      this.last = start;
+      let img = this.mainImg;
+      img.newcoords = this.toRelative(img.lastcoords, this.last);
+      this.ctx.translate(this.last[0], this.last[1]);
     },
-    touchStart(event) {
-      event.preventDefault();
-      this.ctx.save();
-      this.startX = event.touches[0].pageX;
-      this.startY = event.touches[0].pageY;
-      this.X1 = event.touches[0].pageX;
-      this.Y1 = event.touches[0].pageY;
-      for (let img of this.imgs) {
-        img.newcoords[0] = img.lastcoords[0] - this.X1;
-        img.newcoords[1] = img.lastcoords[1] - this.Y1;
-      }
-      this.ctx.translate(this.X1, this.Y1);
-    },
-    mouseMove(event) {
-      if (this.startX) {
-        let deltaX = event.offsetX - this.X1;
-        let deltaY = event.offsetY - this.Y1;
-        this.X1 = event.offsetX;
-        this.Y1 = event.offsetY;
-        this.ctx.translate(deltaX, deltaY);
+    logMove(e) {
+      if (this.start) {
+        let offset = [];
+        if (e.touches) offset = [e.touches[0].pageX, e.touches[0].pageY];
+        else offset = [e.offsetX, e.offsetY];
+        let delta = this.toRelative(offset, this.last);
+        this.last = offset;
+        this.ctx.translate(delta[0], delta[1]);
         this.draw();
       }
     },
-    touchMove(event) {
-      if (event.touches.length === 1) {
-        if (this.startX) {
-          let deltaX = event.touches[0].pageX - this.X1;
-          let deltaY = event.touches[0].pageY - this.Y1;
-          this.X1 = event.touches[0].pageX;
-          this.Y1 = event.touches[0].pageY;
-          this.ctx.translate(deltaX, deltaY);
-          this.draw();
-        }
-      } else {
-        event;
-      }
-    },
-    mouseUp(event) {
-      if (this.startX) {
-        for (let img of this.imgs) {
-          let arr = [event.offsetX - this.startX, event.offsetY - this.startY];
-          img.lastcoords[0] += arr[0];
-          img.lastcoords[1] += arr[1];
-        }
-        this.startX = null;
-        this.ctx.restore();
-      }
-    },
-    touchEnd() {
-      if (this.startX) {
-        for (let img of this.imgs) {
-          let arr = [this.X1 - this.startX, this.Y1 - this.startY];
-          img.lastcoords[0] += arr[0];
-          img.lastcoords[1] += arr[1];
-        }
-        this.startX = null;
+    logEnd() {
+      if (this.start) {
+        // let offset = [];
+        // if (e.touches) offset = [e.touches[0].pageX, e.touches[0].pageY];
+        // else offset = [e.offsetX, e.offsetY];
+        let img = this.mainImg;
+        let arr = this.toRelative(this.last, this.start);
+        img.lastcoords[0] += arr[0];
+        img.lastcoords[1] += arr[1];
+        this.start = null;
         this.ctx.restore();
       }
     },
@@ -172,29 +149,30 @@ export default {
       this.canvas.width *= dpr;
       this.canvas.height *= dpr;
       this.ctx.scale(dpr, dpr);
-      // this.clearCanvas()
-      // this.draw()
     },
     draw() {
       this.clearCanvas();
-      for (let img of this.imgs) {
-        let scale = this.scale || 1;
-        this.ctx.drawImage(
-          img.img,
-          img.newcoords[0],
-          img.newcoords[1],
-          img.img.width * scale,
-          img.img.height * scale
-        );
-      }
+      let img = this.mainImg;
+      let scale = this.scale || 1;
+      this.ctx.drawImage(
+        img.img,
+        img.newcoords[0],
+        img.newcoords[1],
+        img.img.width * scale,
+        img.img.height * scale
+      );
+      let nw = this.mainImg.newcoords
+      this.ctx.fillRect(nw[0], nw[1], 10, 10)
     },
     sliderupdate() {
-      for (let img of this.imgs) {
-        img.newcoords[0] = img.lastcoords[0];
-        img.newcoords[1] = img.lastcoords[1];
-      }
+      let img = this.mainImg;
+      img.newcoords[0] = img.lastcoords[0];
+      img.newcoords[1] = img.lastcoords[1];
       this.clearCanvas();
       this.draw();
+    },
+    toCanvas([x,y]) {
+      x,y
     },
     toRelative([x1, y1], [x2, y2]) {
       return [x1 - x2, y1 - y2];
