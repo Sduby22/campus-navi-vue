@@ -81,18 +81,19 @@ export default {
   data() {
     return {
       slidescale: 1,
-      scale: 1,
       dpr: window.devicePixelRatio,
       mainImg: { name: "" },
       button: "沙河校区",
       imgs: [
         {
+          scale: 1,
           name: "本部",
           lastcoords: [0, 0],
           newcoords: [0, 0],
           img: this.img1,
         },
         {
+          scale: 1,
           name: "沙河校区",
           lastcoords: [100, 100],
           newcoords: [100, 100],
@@ -119,9 +120,9 @@ export default {
     },
     zoom(center, scale) {
       let img = this.mainImg;
-      img.newcoords[0] = (-center[0] + img.lastcoords[0]) / this.scale;
-      img.newcoords[1] = (-center[1] + img.lastcoords[1]) / this.scale;
-      this.scale = scale;
+      img.newcoords[0] = (-center[0] + img.lastcoords[0]) / img.scale;
+      img.newcoords[1] = (-center[1] + img.lastcoords[1]) / img.scale;
+      img.scale = scale;
       img.newcoords[0] *= scale;
       img.newcoords[1] *= scale;
       this.ctx.save();
@@ -135,7 +136,8 @@ export default {
     },
     mouseWheel(event) {
       let offset = [event.offsetX, event.offsetY];
-      let scale = this.scale + (event.deltaY < 0 ? 0.05 : -0.05);
+      let img = this.mainImg;
+      let scale = img.scale + (event.deltaY < 0 ? 0.05 : -0.05);
       if (scale > this.maxScale) scale = this.maxScale;
       else if (scale < this.minScale) scale = this.minScale;
       this.zoom(offset, scale);
@@ -195,9 +197,7 @@ export default {
     draw() {
       this.clearCanvas();
       let img = this.mainImg;
-      let scale = this.scale || 1;
-      console.log('new ', img.newcoords);
-      console.log('scale ', this.scale);
+      let scale = img.scale || 1;
       this.ctx.drawImage(
         img.img,
         img.newcoords[0],
@@ -209,19 +209,19 @@ export default {
       this.ctx.fillRect(nw[0], nw[1], 10, 10);
       if (this.start) {
         let c = this.toCanvas([
-          (this.start[0] - this.mainImg.lastcoords[0]) / this.scale,
-          (this.start[1] - this.mainImg.lastcoords[1]) / this.scale,
+          (this.start[0] - this.mainImg.lastcoords[0]) / img.scale,
+          (this.start[1] - this.mainImg.lastcoords[1]) / img.scale,
         ]);
         this.ctx.fillRect(c[0], c[1], 10, 10);
       }
     },
     sliderupdate() {
       this.zoom(this.lastclick, this.slidescale);
-      this.slidescale = this.scale;
+      this.slidescale = this.mainImg.scale;
     },
     toCanvas([x, y]) {
       let nw = this.mainImg.newcoords;
-      let sc = this.scale;
+      let sc = this.mainImg.scale;
       return [nw[0] + x * sc, nw[1] + y * sc];
     },
     toRelative([x1, y1], [x2, y2]) {
