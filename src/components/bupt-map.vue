@@ -22,6 +22,9 @@ import directionimg from "../assets/direction.png";
 
 export default {
   name: "bupt-map",
+  props: {
+    routing: Object
+  },
   setup() {
     var canvas = null;
     var ctx = null;
@@ -170,7 +173,13 @@ export default {
       await direction.draw()
     };
 
-    onMounted(loadcanvas);
+    const loadInteractjs = () => {
+      interact('')
+    }
+
+    onMounted(() => {
+      loadcanvas()
+    });
 
     return {
       canvasResize,
