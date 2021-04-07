@@ -81,6 +81,18 @@ export default {
       set y(y) {
         this._y = y - this.img.height/2 * this.scale 
       }
+      set dx(x) {
+        this.x = bg.x+x*bg.scale
+      }
+      get dx() {
+        return (this.x - bg.x) / bg.scale
+      }
+      get dy() {
+        return (this.y - bg.y) / bg.scale
+      }
+      set dy(y) {
+        this.y = bg.y+y*bg.scale
+      }
       async draw() {
         let scale = this.scale;
         await this.load
@@ -116,6 +128,18 @@ export default {
       }
       set y(y) {
         this._y = y - this.img.height * this.scale 
+      }
+      set dx(x) {
+        this.x = bg.x+x*bg.scale
+      }
+      get dx() {
+        return (this.x - bg.x) / bg.scale
+      }
+      get dy() {
+        return (this.y - bg.y) / bg.scale
+      }
+      set dy(y) {
+        this.y = bg.y+y*bg.scale
       }
     }
 
