@@ -19,6 +19,7 @@ import { onMounted } from "@vue/runtime-core";
 import bupt1 from "../assets/bupt.png";
 import markerimg from "../assets/marker.png";
 import directionimg from "../assets/direction.png";
+  
 
 export default {
   name: "bupt-map",
@@ -26,6 +27,8 @@ export default {
     routing: Object
   },
   setup() {
+    const minScale = 0.3
+    const maxScale = 1.7
     var canvas = null;
     var ctx = null;
 
@@ -40,6 +43,7 @@ export default {
             reject('error')
           }
         })
+        // for background, _x _y is the real coordinate.
         this._x = x;
         this._y = y;
         this.scale = scale;
@@ -50,6 +54,18 @@ export default {
       }
       get y() {
         return this._y
+      }
+      _bgmove (offsetX, offsetY) {
+        this._x += offsetX
+        this._y += offsetY
+      }
+      _bgzoom (centerX, centerY, ds) {
+        let oldscale = this.scale
+        this.scale += ds
+        this.scale = this.scale > maxScale ? maxScale : this.scale
+        this.scale = this.scale < minScale ? minScale : this.scale
+        this._x = (this._x - centerX) * (this.scale / oldscale) + centerX
+        this._y = (this._y - centerY) * (this.scale / oldscale) + centerY
       }
       async draw() {
         let scale = this.scale;
@@ -132,8 +148,8 @@ export default {
         return super.draw(-0.5*this.img.width*this.scale, -this.img.height*this.scale)
       }
     }
-
-    var bg = new canvasImage(bupt1, 0, 0, 1);
+    var buptimg1 = new canvasImage(bupt1, 0, 0, 1);
+    var bg = buptimg1
     var marker = new MarkerImg(markerimg, 500, 500, 0.04)
     var direction = new DirectionImg(directionimg, 500, 600, 0.04, 0)
     var direction2 = new DirectionImg(directionimg, 500, 600, 0.04, 45)
@@ -159,14 +175,34 @@ export default {
       draw()
     };
 
+    const clearCanvas = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
     const draw = async () => {
+      clearCanvas()
       for (let item of renderList) {
         await item.draw()
       }
     };
 
+
     const loadInteractjs = () => {
-      interact('#map-canvas')
+      interact('#map-canvas').draggable({
+        listeners: {
+          move(e) {
+            bg._bgmove(e.dx, e.dy) 
+            draw()
+          }
+        },
+      }).gesturable({
+        listeners: {
+          move(e) {
+            bg._bgmove(e.dx, e.dy)
+            bg._bgzoom(e.x0, e.y0, e.ds)
+            draw()
+          }
+        }
+      })
     }
 
     onMounted(() => {
@@ -180,9 +216,10 @@ export default {
       ctx,
     };
   },
+
   mounted() {
-    interact;
   },
+
   methods: {},
   data() {
     return {
@@ -193,9 +230,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.map_img {
-  /* max-width: 100vw; */
-}
+  #map-canvas {
+    touch-action: none;
+  }
+
 .center {
   position: absolute;
   top: 50vh;
