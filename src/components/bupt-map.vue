@@ -1,6 +1,6 @@
 <template>
   <div id="map-div">
-    <canvas id="map-canvas" />
+    <canvas id="map-canvas" @wheel="wheelzoom" />
   </div>
   <div class="center">
     {{ touch }}
@@ -167,6 +167,7 @@ export default {
 
     const canvasResize = () => {
       let dpr = window.devicePixelRatio;
+      console.log(dpr)
       canvas.height = window.innerHeight * dpr;
       canvas.width = window.innerWidth * dpr;
       canvas.style.height = window.innerHeight;
@@ -184,7 +185,6 @@ export default {
         await item.draw()
       }
     };
-
 
     const loadInteractjs = () => {
       interact('#map-canvas').draggable({
@@ -234,9 +234,9 @@ export default {
     touch-action: none;
   }
 
-.center {
-  position: absolute;
-  top: 50vh;
-  left: 50vw;
-}
+  .center {
+    position: absolute;
+    top: 50vh;
+    left: 50vw;
+  }
 </style>
