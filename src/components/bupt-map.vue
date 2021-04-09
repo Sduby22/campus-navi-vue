@@ -170,8 +170,7 @@ export default {
       console.log(dpr)
       canvas.height = window.innerHeight * dpr;
       canvas.width = window.innerWidth * dpr;
-      canvas.style.height = window.innerHeight;
-      canvas.style.width = window.innerWidth;
+      ctx.scale(dpr, dpr)
       ctx.imageSmoothingEnabled = true;
       draw()
     };
@@ -231,6 +230,8 @@ export default {
 
 <style lang="scss" scoped>
   #map-canvas {
+    height: 100%;
+    width: 100%;
     touch-action: none;
   }
 
