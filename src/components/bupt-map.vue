@@ -1,6 +1,6 @@
 <template>
   <div id="map-div">
-    <canvas id="map-canvas" @wheel="wheelZoom" />
+    <canvas id="map-canvas" @mousedown="setdown" @mousemove="setmove" @mouseup="choosePoint" @wheel="wheelZoom" />
   </div>
   <div class="bottom-tool"> 
     <el-button type="primary" size="medium" @click="switchButton">切换到{{currentMap}}</el-button>
@@ -28,7 +28,8 @@ export default {
   props: {
     routing: Object
   },
-  setup() {
+  emits: ['choose-point'],
+  setup(_, {emit}) {
     const minScale = 0.3
     const maxScale = 1.7
     var canvas = null;
@@ -161,6 +162,31 @@ export default {
 
     var renderList = [marker, direction, direction2]
 
+    const toRelativeY = (y) => {
+      return (y-bg.y)/bg.scale
+    }
+
+    const toRelativeX = (x) => {
+      return (x-bg.x)/bg.scale
+    }
+
+    var dragging = false
+    const setdown = () => {
+      dragging = false
+    }
+
+    const choosePoint = (e) => {
+      if (dragging)
+        return
+      let p = [toRelativeX(e.offsetX), toRelativeY(e.offsetY)]
+      console.log(p)
+      emit('choose-point', p)
+    }
+
+    const setmove = () => {
+      dragging = true
+    }
+
     const loadcanvas = () => {
       canvas = document.getElementById("map-canvas");
       ctx = canvas.getContext("2d");
@@ -229,10 +255,12 @@ export default {
     const switchButton = () => {
       renderList = []
       currentMap.value = '本部'
-      if (bg === buptimg1)
+      if (bg === buptimg1) {
         return switchMap(buptimg2)
-      currentMap.value = '沙河'
-      return switchMap(buptimg1)
+      } else {
+        currentMap.value = '沙河'
+        return switchMap(buptimg1)
+      }
     }
 
     const switchMap = (bgimg) => {
@@ -246,11 +274,14 @@ export default {
     });
 
     return {
+      choosePoint,
       wheelZoom,
       currentMap,
       switchButton,
       buptimg1,
       buptimg2,
+      setdown,
+      setmove,
     };
   },
 
