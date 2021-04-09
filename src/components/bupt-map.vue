@@ -65,38 +65,39 @@ export default {
       }
     } 
 
-    class DirectionImg extends canvasImage {
-      constructor(src, x = 0, y = 0, scale = 1, angle = 0) {
-        super(src, x, y, scale) 
-        this.x = x
-        this.y = y
+    class relativeImage extends canvasImage {
+      constructor(src, x=0, y=0, scale=1, angle=0) {
+        super(src, x, y, scale)
+        this.relativeX = x
+        this.relativeY = y
         this.angle = angle
       }
+      // _x and _y are relative to original size of bg.
+      get relativeX() {
+        return this._x
+      }
+      get relativeY() {
+        return this._y
+      }
+      set relativeX(x) {
+        this._x = x
+      }
+      set relativeY(y) {
+        this._y = y
+      }
       get x() {
-        return this._x + this.img.width/2 * this.scale
+        return bg.x + this._x * bg.scale
       }
       get y() {
-        return this._y + this.img.height/2 * this.scale
+        return bg.y + this._y * bg.scale
       }
       set x(x) {
-        this._x = x - this.img.width/2 * this.scale
+        this._x = (x - bg.x) / bg.scale
       }
       set y(y) {
-        this._y = y - this.img.height/2 * this.scale 
+        this._y = (y - bg.y) / bg.scale
       }
-      set dx(x) {
-        this.x = bg.x+x*bg.scale
-      }
-      get dx() {
-        return (this.x - bg.x) / bg.scale
-      }
-      get dy() {
-        return (this.y - bg.y) / bg.scale
-      }
-      set dy(y) {
-        this.y = bg.y+y*bg.scale
-      }
-      async draw() {
+      async draw(offsetX, offsetY) {
         let scale = this.scale;
         await this.load
         ctx.save()
@@ -104,8 +105,8 @@ export default {
         ctx.rotate(this.angle)
         ctx.drawImage(
           this.img,
-          -0.5*this.img.width * scale,
-          -0.5*this.img.height * scale,
+          offsetX,
+          offsetY,
           this.img.width * scale,
           this.img.height * scale
         );
@@ -114,41 +115,32 @@ export default {
       }
     }
 
-    class MarkerImg extends canvasImage {
-      constructor(src, x = 0, y = 0, scale = 1) {
-        super(src, x, y, scale) 
-        this.x = x
-        this.y = y
+    class DirectionImg extends relativeImage {
+      constructor(src, x = 0, y = 0, scale = 1, angle = 0) {
+        super(src, x, y, scale, angle) 
       }
-      get x() {
-        return this._x + this.img.width/2*this.scale
-      }
-      get y() {
-        return this._y + this.img.height * this.scale
-      }
-      set x(x) {
-        this._x = x - this.img.width/2*this.scale
-      }
-      set y(y) {
-        this._y = y - this.img.height * this.scale 
-      }
-      set dx(x) {
-        this.x = bg.x+x*bg.scale
-      }
-      get dx() {
-        return (this.x - bg.x) / bg.scale
-      }
-      get dy() {
-        return (this.y - bg.y) / bg.scale
-      }
-      set dy(y) {
-        this.y = bg.y+y*bg.scale
+      async draw() {
+        return super.draw(-0.5*this.img.width*this.scale,-0.5*this.img.height*this.scale)
       }
     }
 
-    var bg = new canvasImage(bupt1);
+    class MarkerImg extends relativeImage {
+      constructor(src, x = 0, y = 0, scale = 1, angle = 0) {
+        super(src, x, y, scale, angle) 
+      }
+      async draw() {
+        return super.draw(-0.5*this.img.width*this.scale, -this.img.height*this.scale)
+      }
+    }
+
+    var bg = new canvasImage(bupt1, 0, 0, 1);
     var marker = new MarkerImg(markerimg, 500, 500, 0.04)
     var direction = new DirectionImg(directionimg, 500, 600, 0.04, 0)
+    var direction2 = new DirectionImg(directionimg, 500, 600, 0.04, 45)
+    direction2.relativeX = 500
+    direction2.relativeY = 600
+
+    var renderList = [bg, marker, direction, direction2]
 
     const loadcanvas = () => {
       canvas = document.getElementById("map-canvas");
@@ -168,17 +160,18 @@ export default {
     };
 
     const draw = async () => {
-      await bg.draw();
-      await marker.draw()
-      await direction.draw()
+      for (let item of renderList) {
+        await item.draw()
+      }
     };
 
     const loadInteractjs = () => {
-      interact('')
+      interact('#map-canvas')
     }
 
     onMounted(() => {
       loadcanvas()
+      loadInteractjs()
     });
 
     return {
