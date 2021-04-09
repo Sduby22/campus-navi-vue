@@ -1,13 +1,14 @@
 <template>
   <div id="map-div">
-    <canvas id="map-canvas" @wheel="wheelzoom" />
+    <canvas id="map-canvas" @wheel="wheelZoom" />
   </div>
-  <div class="center">
-    {{ touch }}
+  <div class="bottom-tool"> 
+    <el-button type="primary" size="medium" @click="switchButton">切换到{{currentMap}}</el-button>
   </div>
 </template>
 
 <script>
+import { ref } from 'vue'
 import "@interactjs/auto-start";
 import "@interactjs/actions/drag";
 import "@interactjs/actions/resize";
@@ -17,6 +18,7 @@ import "@interactjs/dev-tools";
 import interact from "@interactjs/interact";
 import { onMounted } from "@vue/runtime-core";
 import bupt1 from "../assets/bupt.png";
+import bupt2 from "../assets/bupt2.png";
 import markerimg from "../assets/marker.png";
 import directionimg from "../assets/direction.png";
   
@@ -149,6 +151,7 @@ export default {
       }
     }
     var buptimg1 = new canvasImage(bupt1, 0, 0, 1);
+    var buptimg2 = new canvasImage(bupt2, 0, 0, 1);
     var bg = buptimg1
     var marker = new MarkerImg(markerimg, 500, 500, 0.04)
     var direction = new DirectionImg(directionimg, 500, 600, 0.04, 0)
@@ -156,7 +159,7 @@ export default {
     direction2.relativeX = 500
     direction2.relativeY = 600
 
-    var renderList = [bg, marker, direction, direction2]
+    var renderList = [marker, direction, direction2]
 
     const loadcanvas = () => {
       canvas = document.getElementById("map-canvas");
@@ -167,7 +170,6 @@ export default {
 
     const canvasResize = () => {
       let dpr = window.devicePixelRatio;
-      console.log(dpr)
       canvas.height = window.innerHeight * dpr;
       canvas.width = window.innerWidth * dpr;
       ctx.scale(dpr, dpr)
@@ -178,14 +180,17 @@ export default {
     const clearCanvas = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
     }
+
     const draw = async () => {
       clearCanvas()
+      await bg.draw()
       for (let item of renderList) {
         await item.draw()
       }
     };
 
     const loadInteractjs = () => {
+      var zoomx, zoomy
       interact('#map-canvas').draggable({
         listeners: {
           move(e) {
@@ -195,13 +200,44 @@ export default {
         },
       }).gesturable({
         listeners: {
+          start(e) {
+            zoomx = e.x0
+            zoomy = e.y0
+          },
           move(e) {
+            zoomx += e.dx
+            zoomy += e.dy
             bg._bgmove(e.dx, e.dy)
-            bg._bgzoom(e.x0, e.y0, e.ds)
+            bg._bgzoom(zoomx, zoomy, e.ds)
             draw()
           }
         }
       })
+    }
+    
+    const wheelZoom = (e) => {
+      let ds = 0
+      if(e.deltaY > 0)
+        ds = -0.05
+      else if(e.deltaY < 0)
+        ds = 0.05
+      bg._bgzoom(e.offsetX, e.offsetY, ds)
+      draw()
+    }
+
+    var currentMap = ref('沙河')
+    const switchButton = () => {
+      renderList = []
+      currentMap.value = '本部'
+      if (bg === buptimg1)
+        return switchMap(buptimg2)
+      currentMap.value = '沙河'
+      return switchMap(buptimg1)
+    }
+
+    const switchMap = (bgimg) => {
+      bg = bgimg
+      draw()
     }
 
     onMounted(() => {
@@ -210,9 +246,11 @@ export default {
     });
 
     return {
-      canvasResize,
-      canvas,
-      ctx,
+      wheelZoom,
+      currentMap,
+      switchButton,
+      buptimg1,
+      buptimg2,
     };
   },
 
@@ -240,4 +278,11 @@ export default {
     top: 50vh;
     left: 50vw;
   }
+
+  .bottom-tool {
+    position: fixed; 
+    bottom: 20px;
+    right: 20px;
+  }
+
 </style>

@@ -3,7 +3,7 @@
     <search-head @get-route="getRoute"></search-head>
   </div>
   <show-route class="fixed" :routing="routing" @clear-route="routing=null"/>
-  <div style="position:fixed; top: -20px; left:-8px; z-index: -1">
+  <div style="position:fixed; z-index: -1">
   <bupt-map/>
   </div>
 </template>
@@ -35,6 +35,8 @@ export default {
 
 <style>
 .fixed {
+  top: 20px;
+  left: 20px;
   position: fixed;
 }
 
@@ -44,6 +46,5 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 20px;
 }
 </style>
