@@ -151,16 +151,64 @@ export default {
         return super.draw(-0.5*this.img.width*this.scale, -this.img.height*this.scale)
       }
     }
+
+    class LineImg {
+      constructor(x1, y1, x2, y2, thickness, color='#000000') {
+        this._x1 = x1
+        this._x2 = x2
+        this._y1 = y1
+        this._y2 = y2
+        this.color = color
+        this.thickness = thickness
+      }
+      get x1() {
+        return bg.x + this._x1 * bg.scale
+      }
+      get x2() {
+        return bg.x + this._x2 * bg.scale
+      }
+      get y1() {
+        return bg.y + this._y1 * bg.scale
+      }
+      get y2() {
+        return bg.y + this._y2 * bg.scale
+      }
+      set x1(v) {
+      }
+      set x2(v) {
+      }
+      set y1(v) {
+      }
+      set y2(v) {
+      }
+      async draw() {
+        ctx.beginPath()
+        ctx.moveTo(this.x1, this.y1)
+        ctx.lineTo(this.x2, this.y2)
+        ctx.lineWidth = this.thickness
+        ctx.strokeStyle = this.color
+        ctx.stroke()
+        return Promise.resolve()
+      }
+    }
+
+    LineImg
+
     var buptimg1 = new canvasImage(bupt1, 0, 0, 1);
     var buptimg2 = new canvasImage(bupt2, 0, 0, 1);
     var bg = buptimg1
     var marker = new MarkerImg(markerimg, 500, 500, 0.04)
     var direction = new DirectionImg(directionimg, 500, 600, 0.04, 0)
     var direction2 = new DirectionImg(directionimg, 500, 600, 0.04, 45)
+    var newline = new LineImg(500,500,700,700, 3, '#ff0000')
     direction2.relativeX = 500
     direction2.relativeY = 600
 
-    var renderList = [marker, direction, direction2]
+    var markers = [marker]
+    var directions = [direction, direction2]
+    var lines = [newline]
+
+    var renderList = [lines, markers, directions]
 
     const toRelativeY = (y) => {
       return (y-bg.y)/bg.scale
@@ -210,8 +258,10 @@ export default {
     const draw = async () => {
       clearCanvas()
       await bg.draw()
-      for (let item of renderList) {
-        await item.draw()
+      for (let group of renderList) {
+        for (let item of group) {
+          await item.draw()
+        }
       }
     };
 
@@ -253,7 +303,7 @@ export default {
 
     var currentMap = ref('沙河')
     const switchButton = () => {
-      renderList = []
+      /* renderList = [] */
       currentMap.value = '本部'
       if (bg === buptimg1) {
         return switchMap(buptimg2)

@@ -117,6 +117,7 @@
 </template>
 
 <script>
+import buptPoints from '../assets/buptPoints.json'
 
 export default {
   name: "search-head",
@@ -155,9 +156,9 @@ export default {
     },
     stringQuery() {
       if (!this.currentInput.value) return null;
-      var arr = [];
-      for (let i = 0; i != 99; i++) arr.push("asd");
-      return arr;
+      let names = Object.keys(buptPoints);
+      let result = names.filter((x) => {return x.includes(this.currentInput.value)})
+      return result
       // return [this.currentInput.value, "aaa"];
     },
     checkAllLegal() {
