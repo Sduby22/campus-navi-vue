@@ -129,7 +129,7 @@ export default {
     routing: Object,
   },
   name: "show-route",
-  emits: ["clear-route", "shortest", "fastest"],
+  emits: ["clear-route", "shortest", "fastest", "start-navi", "end-navi"],
   setup() {
     const panes = [
       {
@@ -158,7 +158,11 @@ export default {
   },
   computed: {
     isbus() {
-      return false;
+      let list = this.routing.data.map(x=>x.shahe)
+      let f = list.reduce((old,cur)=>{ if(old===cur) return old; else return 'false' })
+      if (f === 'false')
+        return true
+      else return false
     },
     timeShortest() {
       return this.routing.data.reduce(
@@ -187,9 +191,11 @@ export default {
   },
   methods: {
     startnavi() {
+      this.$emit('start-navi')
       this.navi=true
     },
     stopnavi() {
+      this.$emit('end-navi')
       this.navi=false
     },
     shortest() {
@@ -259,7 +265,7 @@ export default {
 
 .stop-navi {
   position: fixed;
-  bottom: 50px;
-  left: 50%;
+  bottom: 20px;
+  left: 50px;
 }
 </style>

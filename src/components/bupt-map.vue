@@ -1,9 +1,21 @@
 <template>
   <div id="map-div">
-    <canvas id="map-canvas" @mousedown="setdown" @mousemove="setmove" @mouseup="choosePoint" @wheel="wheelZoom" />
+    <canvas
+      id="map-canvas"
+      @mousedown="setdown"
+      @mousemove="setmove"
+      @mouseup="choosePoint"
+      @wheel="wheelZoom"
+    />
   </div>
-  <div class="bottom-tool"> 
-    <el-button type="primary" size="medium" @click="switchButton">切换到{{currentMap}}</el-button>
+  <div class="bottom-tool">
+    <div style="width: 30px">
+      <el-slider v-model="speed" vertical :max="500" :min="10" height="200px">
+      </el-slider>
+    </div>
+    <el-button type="primary" size="medium" @click="switchButton"
+      >切换到{{ currentMap }}</el-button
+    >
   </div>
 </template>
 
@@ -26,7 +38,8 @@ import directionimg from "../assets/direction.png";
 export default {
   name: "bupt-map",
   props: {
-    routing: Object
+    routing: Object,
+    start: Boolean,
   },
   emits: ['choose-point'],
   setup(props, {emit}) {
@@ -142,8 +155,8 @@ export default {
     }
 
     class DirectionImg extends relativeImage {
-      constructor(src, x = 0, y = 0, scale = 1, angle = 0) {
-        super(src, x, y, scale, angle) 
+      constructor(x = 0, y = 0, scale = 0.04, angle = 0) {
+        super(directionimg, x, y, scale, angle) 
       }
       async draw() {
         return super.draw(-0.5*this.img.width*this.scale,-0.5*this.img.height*this.scale)
@@ -161,8 +174,8 @@ export default {
 
     class LineImg {
       constructor(x1, y1, x2, y2, begin=0, end=0, thickness=3, color='#00aa00') {
-        const xoffset = -20
-        const yoffset = -10
+        const xoffset = 0
+        const yoffset = 0
         this._x1 = x1 + (x2-x1)*begin + xoffset
         this._x2 = x2 - (x2-x1)*end+ xoffset
         this._y1 = y1 + (y2-y1)*begin + yoffset
@@ -205,26 +218,28 @@ export default {
     var buptimg2 = new canvasImage(bupt2, 0, 0, 1);
     var bg = buptimg1
 
-    let marker = new MarkerImg(500,500,0.04)
-
     var map1 = {
       map: buptimg1,
-      markers: [marker],
+      markers: [],
       lines: [],
+      directions: [],
     }
 
     var map2 = {
       map: buptimg2,
       markers: [],
       lines: [],
+      directions: [],
     }
 
     let lines = ref([])
     lines.value=map1.lines
     let markers = ref([])
+    let directions = ref([])
     markers.value=map1.markers
+    directions.value = map1.directions
 
-    var renderList = [lines, markers]
+    var renderList = [lines, markers, directions]
 
     const toRelativeY = (y) => {
       return (y-bg.y)/bg.scale
@@ -333,6 +348,7 @@ export default {
       bg = mapobj.map
       markers.value = mapobj.markers
       lines.value = mapobj.lines
+      directions.value = mapobj.directions
       draw()
     }
 
@@ -359,16 +375,14 @@ export default {
         let y2 = data.path[x].end[1]
         if (x == 0) {
           line = new LineImg( x1, y1, x2, y2, data.path[x].arg )
-          console.log(`beg: ${data.path[x].arg}`);
         }
         else if (x == data.path.length-1) {
           line = new LineImg( x1, y1, x2, y2, 0, 1-data.path[x].arg )
-          console.log(`end: ${data.path[x].arg}`);
         }
         else {
-          console.log(`else: x=${x}`);
           line = new LineImg( x1, y1, x2, y2 )
         }
+        line.capacity = data.path[x].capacity
         line.color = color_map[Math.ceil(data.path[x].capacity*5)-1]
         if (data.shahe) {
           map2.lines.push(line)
@@ -376,8 +390,93 @@ export default {
           map1.lines.push(line)
         }
       }
-      console.log(map1)
     }
+
+    var speed = ref(10)
+    let time;
+    let currPath, currPathObj
+    let currmap
+    let curMax
+    const stopNavi = () => {
+      time = null
+      map1.directions.length =  0
+      map2.directions.length =  0
+    }
+
+    var i = 0
+    const step = (currentTime) => {
+      console.log("step");
+      let speedv = speed.value
+      if (!time) {
+        currPathObj = 0
+        time = currentTime
+        currmap = props.routing.path[currPathObj].shahe ? map2 : map1
+        currPath = currmap.lines[0]
+        map1.currIndex = 0
+        map2.currIndex = 0
+        curMax = props.routing.path[currPathObj].path.length
+        i=0
+        currmap.directions.push(new DirectionImg(currPath._x1, currPath._x2))
+      }
+      const deltatime = currentTime - time
+      time = currentTime
+      let deltaDistance = deltatime * speedv * 0.001 * currPath.capacity
+      while (deltaDistance >= 0) {
+        const tan = (currPath._y2 -currPath._y1)/(currPath._x2 -currPath._x1)
+        let angle = Math.atan(tan)
+        if (currPath._x2-currPath._x1<0)
+          angle += Math.PI
+        let deltax = deltaDistance * Math.cos(angle)
+        let deltay = deltaDistance * Math.sin(angle)
+        let exceedx = deltax - (currPath._x2-currPath._x1)
+        if (exceedx * deltax <= 0) {
+          // still in the same path
+          deltaDistance = -1 
+          currPath._x1 += deltax
+          currPath._y1 += deltay
+          currmap.directions[0].angle = Math.PI/2 + angle
+          currmap.directions[0]._x = currPath._x1
+          currmap.directions[0]._y = currPath._y1
+        } else {
+          // change path or might change campus
+          deltaDistance = exceedx / Math.cos(angle)
+          currPath.thickness = 1e-6
+          currmap.currIndex += 1
+          i += 1
+          if (i == curMax) {
+            // next path obj (may change campus)
+            currPathObj += 1
+            if (currPathObj == props.routing.path.length) {
+              console.log("finished");
+              stopNavi()
+              return
+              // finished navi
+            } else {
+              currmap.directions.length = 0
+              currmap = props.routing.path[currPathObj].shahe ? map2 : map1
+              currPath = currmap.lines[currmap.currIndex]
+              currmap.directions.push(new DirectionImg(currPath._x1, currPath._x2))
+              curMax = props.routing.path[currPathObj].path.length
+              i = 0
+            }
+          } else {
+            currPath = currmap.lines[currmap.currIndex]
+          }
+        } 
+      }
+      draw()
+      if (props.start)
+        requestAnimationFrame(step)
+    }
+
+    const startNavi = () => {
+      requestAnimationFrame(step)
+    }
+
+    watch(props, () => {
+      if (props.start) startNavi()
+      else stopNavi()
+    })
 
     watch(props.routing, () => {
       map1.markers.length = 0
@@ -388,11 +487,11 @@ export default {
       setMarkers(props.routing.beg)
       setMarkers(props.routing.dest)
       props.routing.path.forEach(x => setLines(x))
-      console.log(props.routing.path);
       draw()
     })
 
     return {
+      speed,
       LineImg,
       choosePoint,
       wheelZoom,
@@ -418,22 +517,21 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  #map-canvas {
-    height: 100%;
-    width: 100%;
-    touch-action: none;
-  }
+#map-canvas {
+  height: 100%;
+  width: 100%;
+  touch-action: none;
+}
 
-  .center {
-    position: absolute;
-    top: 50vh;
-    left: 50vw;
-  }
+.center {
+  position: absolute;
+  top: 50vh;
+  left: 50vw;
+}
 
-  .bottom-tool {
-    position: fixed; 
-    bottom: 20px;
-    right: 20px;
-  }
-
+.bottom-tool {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+}
 </style>
