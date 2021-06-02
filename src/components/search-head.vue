@@ -66,7 +66,7 @@
         plain
         round
         size="small"
-        @click="passby.push({ value: '' })"
+        @click="passby.push({ value: '', type: 'pass' });setpoints('pass')"
       >
         + 途径点</el-button
       >
@@ -75,7 +75,7 @@
         plain
         round
         size="small"
-        @click="passby.length && passby.length--"
+        @click="passby.length && passby.length--;setpoints('pass')"
       >
         - 途径点</el-button
       >
@@ -94,7 +94,7 @@
           <template #append>
             <el-button
               icon="el-icon-minus"
-              @click="passby.splice(index, 1)"
+              @click="passby.splice(index, 1);setpoints('pass')"
             ></el-button>
           </template>
         </el-input>
@@ -121,7 +121,10 @@ import buptPoints from '../assets/buptPoints.json'
 
 export default {
   name: "search-head",
-  emits: ['get-route'],
+  emits: ['get-route', 'setbeg', 'setdest', 'setpass'],
+  props: {
+    routing: Object
+  },
   setup() {
     const searchCard = {
       fontSize: "16px",
@@ -140,11 +143,13 @@ export default {
         value: "start",
         legal: false,
         selected: false,
+        type: "beg"
       },
       dest: {
         value: "",
         legal: false,
         selected: false,
+        type: "dest"
       },
       passby: [],
       route: false,
@@ -167,13 +172,27 @@ export default {
         res &&= x.legal
       }
       return res
-    }
+    },
   },
   methods: {
+    setpoints(str) {
+      switch (str) {
+        case "beg":
+          this.$emit('setbeg', this.begin.value)
+          break;
+        case "dest":
+          this.$emit('setdest', this.dest.value)
+          break;
+        case "pass":
+          this.$emit('setpass', this.passby.filter(x=>x.legal).map(x => x.value))
+          break;
+      }
+    },
     checkInput() {
       this.currentInput.selected = false
       if(this.currentInput.value && (this.currentInput.value === this.stringQuery[0])) {
         this.currentInput.legal = true
+        this.setpoints(this.currentInput.type)
       }
       else {
         this.currentInput.legal = false
@@ -189,8 +208,8 @@ export default {
       this.currentInput.selected = true;
     },
     getRoute() {
-      let pass = this.route ? this.passby : []
-      this.$emit('get-route', this.begin, pass, this.dest)
+      let pass = this.route ? this.passby.map(x=>x.value) : []
+      this.$emit('get-route', this.begin.value, pass, this.dest.value)
     }
   },
   components: {

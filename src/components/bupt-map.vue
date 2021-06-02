@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import "@interactjs/auto-start";
 import "@interactjs/actions/drag";
 import "@interactjs/actions/resize";
@@ -29,7 +29,14 @@ export default {
     routing: Object
   },
   emits: ['choose-point'],
-  setup(_, {emit}) {
+  setup(props, {emit}) {
+    const color_map = [
+      "#d62700",
+      "#ff5e00",
+      "#ffb433",
+      "#e8dc00",
+      "#0ed900"
+    ]
     const minScale = 0.3
     const maxScale = 1.7
     var canvas = null;
@@ -144,8 +151,8 @@ export default {
     }
 
     class MarkerImg extends relativeImage {
-      constructor(src, x = 0, y = 0, scale = 1, angle = 0) {
-        super(src, x, y, scale, angle) 
+      constructor(x = 0, y = 0, scale = 0.04, angle = 0) {
+        super(markerimg, x, y, scale, angle) 
       }
       async draw() {
         return super.draw(-0.5*this.img.width*this.scale, -this.img.height*this.scale)
@@ -153,11 +160,13 @@ export default {
     }
 
     class LineImg {
-      constructor(x1, y1, x2, y2, thickness, color='#000000') {
-        this._x1 = x1
-        this._x2 = x2
-        this._y1 = y1
-        this._y2 = y2
+      constructor(x1, y1, x2, y2, begin=0, end=0, thickness=3, color='#00aa00') {
+        const xoffset = -20
+        const yoffset = -10
+        this._x1 = x1 + (x2-x1)*begin + xoffset
+        this._x2 = x2 - (x2-x1)*end+ xoffset
+        this._y1 = y1 + (y2-y1)*begin + yoffset
+        this._y2 = y2 - (y2-y1)*end+ yoffset
         this.color = color
         this.thickness = thickness
       }
@@ -192,23 +201,30 @@ export default {
       }
     }
 
-    LineImg
-
     var buptimg1 = new canvasImage(bupt1, 0, 0, 1);
     var buptimg2 = new canvasImage(bupt2, 0, 0, 1);
     var bg = buptimg1
-    var marker = new MarkerImg(markerimg, 500, 500, 0.04)
-    var direction = new DirectionImg(directionimg, 500, 600, 0.04, 0)
-    var direction2 = new DirectionImg(directionimg, 500, 600, 0.04, 45)
-    var newline = new LineImg(500,500,700,700, 3, '#ff0000')
-    direction2.relativeX = 500
-    direction2.relativeY = 600
 
-    var markers = [marker]
-    var directions = [direction, direction2]
-    var lines = [newline]
+    let marker = new MarkerImg(500,500,0.04)
 
-    var renderList = [lines, markers, directions]
+    var map1 = {
+      map: buptimg1,
+      markers: [marker],
+      lines: [],
+    }
+
+    var map2 = {
+      map: buptimg2,
+      markers: [],
+      lines: [],
+    }
+
+    let lines = ref([])
+    lines.value=map1.lines
+    let markers = ref([])
+    markers.value=map1.markers
+
+    var renderList = [lines, markers]
 
     const toRelativeY = (y) => {
       return (y-bg.y)/bg.scale
@@ -259,7 +275,7 @@ export default {
       clearCanvas()
       await bg.draw()
       for (let group of renderList) {
-        for (let item of group) {
+        for (let item of group.value) {
           await item.draw()
         }
       }
@@ -306,15 +322,17 @@ export default {
       /* renderList = [] */
       currentMap.value = '本部'
       if (bg === buptimg1) {
-        return switchMap(buptimg2)
+        return switchMap(map2)
       } else {
         currentMap.value = '沙河'
-        return switchMap(buptimg1)
+        return switchMap(map1)
       }
     }
 
-    const switchMap = (bgimg) => {
-      bg = bgimg
+    const switchMap = (mapobj) => {
+      bg = mapobj.map
+      markers.value = mapobj.markers
+      lines.value = mapobj.lines
       draw()
     }
 
@@ -323,7 +341,59 @@ export default {
       loadInteractjs()
     });
 
+    const setMarkers = (obj) => {
+      if (obj) {
+        if (obj.isshahe)
+          map2.markers.push(new MarkerImg(obj.coor[0],obj.coor[1]))
+        else
+          map1.markers.push(new MarkerImg(obj.coor[0],obj.coor[1]))
+      }
+    }
+
+    const setLines = (data) => {
+      let line;
+      for (let x in data.path) {
+        let x1 = data.path[x].start[0]
+        let y1 = data.path[x].start[1]
+        let x2 = data.path[x].end[0]
+        let y2 = data.path[x].end[1]
+        if (x == 0) {
+          line = new LineImg( x1, y1, x2, y2, data.path[x].arg )
+          console.log(`beg: ${data.path[x].arg}`);
+        }
+        else if (x == data.path.length-1) {
+          line = new LineImg( x1, y1, x2, y2, 0, 1-data.path[x].arg )
+          console.log(`end: ${data.path[x].arg}`);
+        }
+        else {
+          console.log(`else: x=${x}`);
+          line = new LineImg( x1, y1, x2, y2 )
+        }
+        line.color = color_map[Math.ceil(data.path[x].capacity*5)-1]
+        if (data.shahe) {
+          map2.lines.push(line)
+        } else {
+          map1.lines.push(line)
+        }
+      }
+      console.log(map1)
+    }
+
+    watch(props.routing, () => {
+      map1.markers.length = 0
+      map2.markers.length = 0
+      map1.lines.length = 0
+      map2.lines.length = 0
+      props.routing.pass.forEach(x => setMarkers(x))  
+      setMarkers(props.routing.beg)
+      setMarkers(props.routing.dest)
+      props.routing.path.forEach(x => setLines(x))
+      console.log(props.routing.path);
+      draw()
+    })
+
     return {
+      LineImg,
       choosePoint,
       wheelZoom,
       currentMap,
