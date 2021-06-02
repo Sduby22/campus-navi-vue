@@ -1,106 +1,125 @@
 <template>
-  <div v-show="navi">
-  <div
-    :class="{
-      'route-tabs-parent': true,
-      'route-tabs-parent-collapsed': collapsed,
-    }"
-  >
-    <el-tabs class="route-tabs" type="border-card" tab-position="top">
-      <el-tab-pane v-if="!isbus">
-        <template #label>
-          <span><i class="el-icon-user"></i> 步行</span>
-        </template>
-        <div class="pane" style="display:flex;justify-content: space-between">
-        <el-card shadow="hover" class="tab-card" @click="shortest">
-          <template #header>
-            <div class="card-header">
-              <span>最短路径</span>
-            </div>
+  <div>
+    <div
+      :class="{
+        'route-tabs-parent': true,
+        'route-tabs-parent-collapsed': collapsed,
+      }"
+      v-if="!navi"
+    >
+      <el-tabs class="route-tabs" type="border-card" tab-position="top">
+        <el-tab-pane v-if="!isbus">
+          <template #label>
+            <span><i class="el-icon-user"></i> 步行</span>
           </template>
-          <div class="text">用时: {{ timeShortest }}s</div>
-          <div class="text">距离: {{ distanceShortest }}m</div>
-        </el-card>
-        <el-card shadow="hover" class="tab-card" @click="fastest">
-          <template #header>
-            <div class="card-header">
-              <span>最短时间</span>
-            </div>
+          <div
+            class="pane"
+          >
+            <el-card shadow="hover" class="tab-card" @click="shortest">
+              <template #header>
+                <div class="card-header">
+                  <span>最短路径</span>
+                </div>
+              </template>
+              <div class="text">用时: {{ timeShortest }}s</div>
+              <div class="text">距离: {{ distanceShortest }}m</div>
+            </el-card>
+            <el-card shadow="hover" class="tab-card" @click="fastest">
+              <template #header>
+                <div class="card-header">
+                  <span>最短时间</span>
+                </div>
+              </template>
+              <div class="text">用时: {{ timeFastest }}s</div>
+              <div class="text">距离: {{ distanceFastest }}m</div>
+            </el-card>
+          </div>
+          <div style="text-align:center">
+            <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane v-if="!isbus">
+          <template #label>
+            <span><i class="el-icon-bicycle"></i> 骑行</span>
           </template>
-          <div class="text">用时: {{ timeFastest }}s</div>
-          <div class="text">距离: {{ distanceFastest }}m</div>
-        </el-card>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane v-if="!isbus">
-        <template #label>
-          <span><i class="el-icon-bicycle"></i> 骑行</span>
-        </template>
-        <div class="pane" style="display:flex;justify-content: space-between">
-        <el-card shadow="hover" class="tab-card" @click="shortest">
-          <template #header>
-            <div class="card-header">
-              <span>最短路径</span>
-            </div>
+          <div
+            class="pane"
+          >
+            <el-card shadow="hover" class="tab-card" @click="shortest">
+              <template #header>
+                <div class="card-header">
+                  <span>最短路径</span>
+                </div>
+              </template>
+              <div class="text">用时: {{ timeShortest }}s</div>
+              <div class="text">距离: {{ distanceShortest }}m</div>
+            </el-card>
+            <el-card shadow="hover" class="tab-card" @click="fastest">
+              <template #header>
+                <div class="card-header">
+                  <span>最短时间</span>
+                </div>
+              </template>
+              <div class="text">用时: {{ timeFastest }}s</div>
+              <div class="text">距离: {{ distanceFastest }}m</div>
+            </el-card>
+          </div>
+          <div>
+            <el-button @click="startnavi" type="primary">开始导航</el-button>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane v-if="isbus">
+          <template #label>
+            <span><i class="el-icon-truck"></i> 公交</span>
           </template>
-          <div class="text">用时: {{ timeShortest }}s</div>
-          <div class="text">距离: {{ distanceShortest }}m</div>
-        </el-card>
-        <el-card shadow="hover" class="tab-card" @click="fastest">
-          <template #header>
-            <div class="card-header">
-              <span>最短时间</span>
-            </div>
-          </template>
-          <div class="text">用时: {{ timeFastest }}s</div>
-          <div class="text">距离: {{ distanceFastest }}m</div>
-        </el-card>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane v-if="isbus">
-        <template #label>
-          <span><i class="el-icon-truck"></i> 公交</span>
-        </template>
-        <div class="pane" style="display:flex;justify-content: space-between">
-        <el-card shadow="hover" class="tab-card" @click="shortest">
-          <template #header>
-            <div class="card-header">
-              <span>最短路径</span>
-            </div>
-          </template>
-          <div class="text">用时: {{ timeShortest }}s</div>
-          <div class="text">距离: {{ distanceShortest }}m</div>
-        </el-card>
-        <el-card shadow="hover" class="tab-card" @click="fastest">
-          <template #header>
-            <div class="card-header">
-              <span>最短时间</span>
-            </div>
-          </template>
-          <div class="text">用时: {{ timeFastest }}s</div>
-          <div class="text">距离: {{ distanceFastest }}m</div>
-        </el-card>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
-    <div :class="collapsed ? 'collapse-btn-collapsed' : 'collapse-btn'">
-      <el-button
-        style="border-radius: 4px 0 0 4px"
-        plain
-        icon="el-icon-close"
-        @click="close()"
-        size="small"
-      ></el-button>
-      <el-button
-        style="margin-left: 0"
-        class="btn-right-radius"
-        plain
-        :icon="hideIcon"
-        @click="hide()"
-        size="small"
-      ></el-button>
+          <div
+            class="pane"
+          >
+            <el-card shadow="hover" class="tab-card" @click="shortest">
+              <template #header>
+                <div class="card-header">
+                  <span>最短路径</span>
+                </div>
+              </template>
+              <div class="text">用时: {{ timeShortest }}s</div>
+              <div class="text">距离: {{ distanceShortest }}m</div>
+            </el-card>
+            <el-card shadow="hover" class="tab-card" @click="fastest">
+              <template #header>
+                <div class="card-header">
+                  <span>最短时间</span>
+                </div>
+              </template>
+              <div class="text">用时: {{ timeFastest }}s</div>
+              <div class="text">距离: {{ distanceFastest }}m</div>
+            </el-card>
+          </div>
+          <div>
+            <el-button @click="startnavi" type="primary">开始导航</el-button>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+      <div :class="collapsed ? 'collapse-btn-collapsed' : 'collapse-btn'">
+        <el-button
+          style="border-radius: 4px 0 0 4px"
+          plain
+          icon="el-icon-close"
+          @click="close()"
+          size="small"
+        ></el-button>
+        <el-button
+          style="margin-left: 0"
+          class="btn-right-radius"
+          plain
+          :icon="hideIcon"
+          @click="hide()"
+          size="small"
+        ></el-button>
+      </div>
     </div>
-  </div>
+    <div v-if="navi">
+      <el-button type="danger" class="stop-navi" @click="stopnavi" round>停止导航</el-button>
+    </div>
   </div>
 </template>
 
@@ -110,7 +129,7 @@ export default {
     routing: Object,
   },
   name: "show-route",
-  emits: ['clear-route', 'shortest', 'fastest'],
+  emits: ["clear-route", "shortest", "fastest"],
   setup() {
     const panes = [
       {
@@ -139,27 +158,45 @@ export default {
   },
   computed: {
     isbus() {
-      return false
+      return false;
     },
     timeShortest() {
-      return this.routing.data.reduce((old, cur) => Math.floor(old + cur["shortest"].time), 0)
+      return this.routing.data.reduce(
+        (old, cur) => Math.floor(old + cur["shortest"].time),
+        0
+      );
     },
     distanceShortest() {
-      return this.routing.data.reduce((old, cur) => Math.floor(old + cur["shortest"].distance), 0)
+      return this.routing.data.reduce(
+        (old, cur) => Math.floor(old + cur["shortest"].distance),
+        0
+      );
     },
     timeFastest() {
-      return this.routing.data.reduce((old, cur) => Math.floor(old + cur["fastest"].time), 0)
+      return this.routing.data.reduce(
+        (old, cur) => Math.floor(old + cur["fastest"].time),
+        0
+      );
     },
     distanceFastest() {
-      return this.routing.data.reduce((old, cur) => Math.floor(old + cur["fastest"].distance), 0)
-    }
+      return this.routing.data.reduce(
+        (old, cur) => Math.floor(old + cur["fastest"].distance),
+        0
+      );
+    },
   },
   methods: {
+    startnavi() {
+      this.navi=true
+    },
+    stopnavi() {
+      this.navi=false
+    },
     shortest() {
-      this.$emit('shortest')
+      this.$emit("shortest");
     },
     fastest() {
-      this.$emit('fastest')
+      this.$emit("fastest");
     },
     hide() {
       this.collapsed = !this.collapsed;
@@ -175,6 +212,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.pane {
+  display: flex; 
+  justify-content: space-between;
+  align-items: center;
+}
 .route-tabs-parent {
   width: 350px;
   position: relative;
@@ -213,5 +255,11 @@ export default {
 .text {
   color: #6f6f6f;
   font-size: 14px;
+}
+
+.stop-navi {
+  position: fixed;
+  bottom: 50px;
+  left: 50%;
 }
 </style>

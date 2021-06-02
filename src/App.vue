@@ -2,7 +2,7 @@
   <div class="fixed" style="width:350px" v-show="isRoutingEmpty">
     <search-head @get-route="getRoute" @setbeg="setBeg" @setdest="setDest" @setpass="setPass"></search-head>
   </div>
-  <show-route class="fixed" v-show="!isRoutingEmpty" :routing="routing" @clear-route="clearroute" @shortest="shortest" @fastest="fastest"/>
+  <show-route class="fixed" v-if="!isRoutingEmpty" :routing="routing" @clear-route="clearroute" @shortest="shortest" @fastest="fastest"/>
   <div style="position:fixed; z-index: -1">
   <bupt-map :routing="routing"/>
   </div>
