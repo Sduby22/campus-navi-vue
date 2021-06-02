@@ -21,3 +21,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.VSCodeCounter/2021-06-03_01-54-02/details.md
+.VSCodeCounter/2021-06-03_01-54-02/results.csv
+.VSCodeCounter/2021-06-03_01-54-02/results.md
+.VSCodeCounter/2021-06-03_01-54-02/results.txt

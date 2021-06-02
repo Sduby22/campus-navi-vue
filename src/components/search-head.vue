@@ -123,6 +123,7 @@ export default {
   name: "search-head",
   emits: ['get-route', 'setbeg', 'setdest', 'setpass'],
   props: {
+    selected: Object,
     routing: Object
   },
   setup() {
@@ -154,6 +155,12 @@ export default {
       passby: [],
       route: false,
     };
+  },
+  watch: {
+    selected() {
+      this.begin.value = "当前位置"
+      this.begin.legal = true
+    }
   },
   computed: {
     cardShow() {
@@ -209,7 +216,7 @@ export default {
     },
     getRoute() {
       let pass = this.route ? this.passby.map(x=>x.value) : []
-      this.$emit('get-route', this.begin.value, pass, this.dest.value)
+      this.$emit('get-route')
     }
   },
   components: {

@@ -5,6 +5,7 @@
       @setbeg="setBeg"
       @setdest="setDest"
       @setpass="setPass"
+      :selected="selected"
     ></search-head>
   </div>
   <show-route
@@ -18,7 +19,7 @@
     @fastest="fastest"
   />
   <div style="position: fixed; z-index: -1">
-    <bupt-map :routing="routing" :start="naviing" />
+    <bupt-map @choose-point="choosePoint" :routing="routing" :start="naviing" />
   </div>
 </template>
 
@@ -40,13 +41,7 @@ export default {
   data() {
     return {
       naviing: false,
-      null_routing: {
-        data: [],
-        beg: null,
-        dest: null,
-        pass: [],
-        path: [],
-      },
+      selected: {},
       routing: {
         data: [],
         beg: null,
@@ -79,6 +74,16 @@ export default {
     geoisShahe(coor) {
       return coor[1] > 40;
     },
+    async pixeltoGeo(p) {
+      let token = p.isshahe ? this.shahe : this.xitucheng
+      let obj = {
+        uuid: token,
+        x: p.coor[0]+0.0001,
+        y: p.coor[1]+0.0001
+      }
+      let data = (await axios.post(`${config.api}/geo/pos`, obj)).data
+      return [data.data.lnt, data.data.lat]
+    },
     async geotoPixel(coor) {
       let token = this.geoisShahe(coor) ? this.shahe : this.xitucheng;
       let obj = {
@@ -89,15 +94,26 @@ export default {
       let data = (await axios.post(`${config.api}/geo/pixel`, obj)).data;
       return [data.data.x, data.data.y];
     },
+    async choosePoint(p) {
+      let geo = await this.pixeltoGeo(p)
+      this.routing.beg = {
+        geo,
+        coor: p.coor,
+        isshahe: p.isshahe
+      };
+      this.selected= Object.assign(this.routing.beg)
+    },
     async setBeg(beg) {
       this.routing.beg = {
         coor: await this.geotoPixel(buptPoints[beg]),
+        geo: buptPoints[beg],
         isshahe: buptPoints[beg][1] > 40,
       };
     },
     async setDest(dest) {
       this.routing.dest = {
         coor: await this.geotoPixel(buptPoints[dest]),
+        geo: buptPoints[dest],
         isshahe: buptPoints[dest][1] > 40,
       };
     },
@@ -105,7 +121,7 @@ export default {
       let coors = pass.map(x=>buptPoints[x])
       let x = await Promise.all(
         coors.map(async (x) => {
-          return { coor: await this.geotoPixel(x), isshahe: x[1] > 40 };
+          return { geo: buptPoints[x], coor: await this.geotoPixel(x), isshahe: x[1] > 40 };
         })
       );
       this.routing.pass = x;
@@ -114,20 +130,20 @@ export default {
       this.routing.data = [];
       this.routing.path = [];
     },
-    async getRoute(begin, pass, dest) {
-      let p = begin;
-      for (let x of pass) {
+    async getRoute() {
+      let p = this.routing.beg;
+      for (let x of this.routing.pass) {
         await this.getRouteOneStep(p, x);
         p = x;
       }
-      await this.getRouteOneStep(p, dest);
+      await this.getRouteOneStep(p, this.routing.dest);
     },
     async getRouteOneStep(beg, end) {
-      const isshahe = (str) => {
-        return str.slice(0, 2) === "沙河";
+      const isshahe = (obj) => {
+        return obj.isshahe
       };
-      const shaheRealy = "沙河-北京邮电大学沙河校区-西门";
-      const xituchengRelay = "西土城-北京邮电大学西门";
+      const shaheRealy = {coor:buptPoints["沙河-北京邮电大学沙河校区-西门"], isshahe: true};
+      const xituchengRelay = {coor:buptPoints["西土城-北京邮电大学西门"], isshahe: false};
       if (isshahe(beg) && !isshahe(end)) {
         await this.getRouteOneStep(beg, shaheRealy);
         await this.getRouteOneStep(xituchengRelay, end);
@@ -135,9 +151,9 @@ export default {
         await this.getRouteOneStep(beg, xituchengRelay);
         await this.getRouteOneStep(shaheRealy, end);
       } else {
-        let isxitucheng = beg.slice(0, 2) === "西土";
-        let coor1 = buptPoints[beg];
-        let coor2 = buptPoints[end];
+        let isxitucheng = !isshahe(beg) 
+        let coor1 = beg.geo
+        let coor2 = end.geo
         let res = (await this.getRouteApi(coor1, coor2, isxitucheng)).data.data;
         res["shahe"] = !isxitucheng;
         this.routing.data.push(res);

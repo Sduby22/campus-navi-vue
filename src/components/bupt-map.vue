@@ -258,8 +258,7 @@ export default {
       if (dragging)
         return
       let p = [toRelativeX(e.offsetX), toRelativeY(e.offsetY)]
-      console.log(p)
-      emit('choose-point', p)
+      emit('choose-point', {coor:p, isshahe: bg===buptimg2})
     }
 
     const setmove = () => {
@@ -488,6 +487,7 @@ export default {
       setMarkers(props.routing.dest)
       props.routing.path.forEach(x => setLines(x))
       draw()
+      console.log(props.routing);
     })
 
     return {
