@@ -10,7 +10,7 @@
   </div>
   <div class="bottom-tool">
     <div style="width: 30px">
-      <el-slider v-model="speed" vertical :max="500" :min="10" height="200px">
+      <el-slider v-model="speed" vertical :max="600" :min="6" height="200px">
       </el-slider>
     </div>
     <el-button type="primary" size="medium" @click="switchButton"
@@ -41,7 +41,7 @@ export default {
     routing: Object,
     start: Boolean,
   },
-  emits: ['choose-point'],
+  emits: ['choose-point', 'stop-navi'],
   setup(props, {emit}) {
     const color_map = [
       "#d62700",
@@ -223,6 +223,7 @@ export default {
       markers: [],
       lines: [],
       directions: [],
+      coefficient: 2.9187342,
     }
 
     var map2 = {
@@ -230,6 +231,7 @@ export default {
       markers: [],
       lines: [],
       directions: [],
+      coefficient: 2.3955597,
     }
 
     let lines = ref([])
@@ -391,35 +393,46 @@ export default {
       }
     }
 
-    var speed = ref(10)
+    var speed = ref(6)
     let time;
     let currPath, currPathObj
     let currmap
     let curMax
     const stopNavi = () => {
+      if (time)
+        console.log("导航中止");
       time = null
+      if (currmap && currPath)
+        emit('stop-navi', currPath._x1, currPath._y1, currmap === map2)
+      else 
+        emit('stop-navi')
+      map1.lines.length = 0
+      map2.lines.length = 0
       map1.directions.length =  0
       map2.directions.length =  0
+      draw()
     }
 
     var i = 0
+    let startTime = 0;
     const step = (currentTime) => {
-      console.log("step");
-      let speedv = speed.value
-      if (!time) {
+      let speedv = speed.value * props.routing.speed
+      if (!time && props.start) {
+        console.log("导航开始");
         currPathObj = 0
         time = currentTime
-        currmap = props.routing.path[currPathObj].shahe ? map2 : map1
+        startTime = currentTime
+        currmap = props.routing.path[0].shahe ? map2 : map1
         currPath = currmap.lines[0]
         map1.currIndex = 0
         map2.currIndex = 0
-        curMax = props.routing.path[currPathObj].path.length
+        curMax = props.routing.path[0].path.length
         i=0
         currmap.directions.push(new DirectionImg(currPath._x1, currPath._x2))
       }
       const deltatime = currentTime - time
       time = currentTime
-      let deltaDistance = deltatime * speedv * 0.001 * currPath.capacity
+      let deltaDistance = deltatime * speedv * 0.001 * currPath.capacity * currmap.coefficient
       while (deltaDistance >= 0) {
         const tan = (currPath._y2 -currPath._y1)/(currPath._x2 -currPath._x1)
         let angle = Math.atan(tan)
@@ -446,7 +459,8 @@ export default {
             // next path obj (may change campus)
             currPathObj += 1
             if (currPathObj == props.routing.path.length) {
-              console.log("finished");
+              console.log("导航结束");
+              console.log(`实际耗时${(currentTime - startTime)/1000}秒`)
               stopNavi()
               return
               // finished navi
@@ -466,15 +480,20 @@ export default {
       draw()
       if (props.start)
         requestAnimationFrame(step)
+      else
+        stopNavi()
     }
 
     const startNavi = () => {
       requestAnimationFrame(step)
     }
 
+    let previous = null
     watch(props, () => {
-      if (props.start) startNavi()
-      else stopNavi()
+      if (previous !== props.start) {
+        previous = props.start
+        if (props.start) startNavi()
+      }
     })
 
     watch(props.routing, () => {
@@ -487,7 +506,6 @@ export default {
       setMarkers(props.routing.dest)
       props.routing.path.forEach(x => setLines(x))
       draw()
-      console.log(props.routing);
     })
 
     return {

@@ -1,7 +1,5 @@
 <template>
-
-
-<!-- Main Card -->
+  <!-- Main Card -->
   <div v-show="!route" class="search-input">
     <el-input
       class="el-input"
@@ -12,7 +10,7 @@
       clearable
       suffix-icon="el-icon-search"
     >
-    <!-- Route Button -->
+      <!-- Route Button -->
       <template #append>
         <el-button
           type="primary"
@@ -39,8 +37,7 @@
     </div>
   </el-card>
 
-
-<!-- Route Card -->
+  <!-- Route Card -->
   <el-card
     class="route-card"
     shadow="always"
@@ -66,7 +63,10 @@
         plain
         round
         size="small"
-        @click="passby.push({ value: '', type: 'pass' });setpoints('pass')"
+        @click="
+          passby.push({ value: '', type: 'pass' });
+          setpoints('pass');
+        "
       >
         + 途径点</el-button
       >
@@ -75,7 +75,10 @@
         plain
         round
         size="small"
-        @click="passby.length && passby.length--;setpoints('pass')"
+        @click="
+          passby.length && passby.length--;
+          setpoints('pass');
+        "
       >
         - 途径点</el-button
       >
@@ -94,7 +97,10 @@
           <template #append>
             <el-button
               icon="el-icon-minus"
-              @click="passby.splice(index, 1);setpoints('pass')"
+              @click="
+                passby.splice(index, 1);
+                setpoints('pass');
+              "
             ></el-button>
           </template>
         </el-input>
@@ -108,9 +114,16 @@
         clearable
         suffix-icon="el-icon-search"
       />
-      <el-button type="primary" :disabled="!checkAllLegal" @click="getRoute">规划路线</el-button>
+      <el-button type="primary" :disabled="!checkAllLegal" @click="getRoute"
+        >规划路线</el-button
+      >
     </template>
-    <li v-show="cardShow" v-for="(x, index) in stringQuery" :key="index" @click="changeInput(x)">
+    <li
+      v-show="cardShow"
+      v-for="(x, index) in stringQuery"
+      :key="index"
+      @click="changeInput(x)"
+    >
       <i class="el-icon-location-outline" />{{ x }}
     </li>
   </el-card>
@@ -167,9 +180,22 @@ export default {
       return !this.currentInput.selected && this.currentInput.value
     },
     stringQuery() {
+      function shuffle(arr) {
+          var array = arr;
+          var m = array.length,
+              t, i;
+          while (m) {
+              i = Math.floor(Math.random() * m--);
+              t = array[m];
+              array[m] = array[i];
+              array[i] = t;
+          }
+          return array;
+      }
       if (!this.currentInput.value) return null;
       let names = Object.keys(buptPoints);
       let result = names.filter((x) => {return x.includes(this.currentInput.value)})
+      if (this.currentInput.value === '食堂') result = shuffle(result)
       return result
       // return [this.currentInput.value, "aaa"];
     },

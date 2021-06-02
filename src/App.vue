@@ -16,10 +16,12 @@
     @end-navi="naviing = false"
     @clear-route="clearroute"
     @shortest="shortest"
+    @bike="getRoute('bike')"
+    @other="getRoute('walk')"
     @fastest="fastest"
   />
   <div style="position: fixed; z-index: -1">
-    <bupt-map @choose-point="choosePoint" :routing="routing" :start="naviing" />
+    <bupt-map @choose-point="choosePoint" :routing="routing" :start="naviing" @stop-navi="stopNavi"/>
   </div>
 </template>
 
@@ -59,6 +61,17 @@ export default {
     },
   },
   methods: {
+    async stopNavi(x, y, isshahe) {
+      this.naviing = false;
+      if (x&&y) {
+        let obj = {
+          coor: [x,y],
+          isshahe: isshahe
+        }
+        this.clearroute()
+        await this.choosePoint(obj)
+      }
+    },
     shortest() {
       this.routing.path.length = 0;
       for (let x of this.routing.data) {
@@ -95,6 +108,8 @@ export default {
       return [data.data.x, data.data.y];
     },
     async choosePoint(p) {
+      if (this.routing.data.length != 0) return
+      console.log('用户手动选择起点');
       let geo = await this.pixeltoGeo(p)
       this.routing.beg = {
         geo,
@@ -104,6 +119,7 @@ export default {
       this.selected= Object.assign(this.routing.beg)
     },
     async setBeg(beg) {
+      console.log(`用户输入起点: ${beg}`);
       this.routing.beg = {
         coor: await this.geotoPixel(buptPoints[beg]),
         geo: buptPoints[beg],
@@ -111,6 +127,7 @@ export default {
       };
     },
     async setDest(dest) {
+      console.log(`用户输入终点: ${dest}`);
       this.routing.dest = {
         coor: await this.geotoPixel(buptPoints[dest]),
         geo: buptPoints[dest],
@@ -118,6 +135,7 @@ export default {
       };
     },
     async setPass(pass) {
+      console.log(`用户输入途径点: ${pass}`);
       let coors = pass.map(x=>buptPoints[x])
       let x = await Promise.all(
         coors.map(async (x) => {
@@ -130,33 +148,37 @@ export default {
       this.routing.data = [];
       this.routing.path = [];
     },
-    async getRoute() {
+    async getRoute(str="walk") {
+      console.log("寻路中...");
+      let del = this.routing.data.length
       let p = this.routing.beg;
+      this.routing.speed = str==="walk" ? config.walkspeed : config.bikespeed
       for (let x of this.routing.pass) {
-        await this.getRouteOneStep(p, x);
+        await this.getRouteOneStep(p, x, str);
         p = x;
       }
-      await this.getRouteOneStep(p, this.routing.dest);
+      await this.getRouteOneStep(p, this.routing.dest, str);
+      this.routing.data.splice(0,del)
     },
-    async getRouteOneStep(beg, end) {
+    async getRouteOneStep(beg, end, str) {
       const isshahe = (obj) => {
         return obj.isshahe
       };
-      const shaheRealy = {coor:buptPoints["沙河-北京邮电大学沙河校区-西门"], isshahe: true};
-      const xituchengRelay = {coor:buptPoints["西土城-北京邮电大学西门"], isshahe: false};
+      const shaheRealy = {geo:buptPoints["沙河-北京邮电大学沙河校区-西门"], isshahe: true};
+      const xituchengRelay = {geo:buptPoints["西土城-北京邮电大学西门"], isshahe: false};
       if (isshahe(beg) && !isshahe(end)) {
-        await this.getRouteOneStep(beg, shaheRealy);
-        await this.getRouteOneStep(xituchengRelay, end);
+        await this.getRouteOneStep(beg, shaheRealy, str);
+        await this.getRouteOneStep(xituchengRelay, end, str);
       } else if (!isshahe(beg) && isshahe(end)) {
-        await this.getRouteOneStep(beg, xituchengRelay);
-        await this.getRouteOneStep(shaheRealy, end);
+        await this.getRouteOneStep(beg, xituchengRelay, str);
+        await this.getRouteOneStep(shaheRealy, end, str);
       } else {
         let isxitucheng = !isshahe(beg) 
         let coor1 = beg.geo
         let coor2 = end.geo
-        let res = (await this.getRouteApi(coor1, coor2, isxitucheng)).data.data;
+        let res = (await this.getRouteApi(coor1, coor2, isxitucheng, str==="bike")).data.data;
         res["shahe"] = !isxitucheng;
-        this.routing.data.push(res);
+        this.routing.data.push(res)
       }
       return Promise.resolve()
     },
@@ -184,7 +206,7 @@ export default {
         await axios.post(`${config.api}/nav/load`, obj2)
       ).data.data.instanceToken;
     },
-    getRouteApi(coor1, coor2, isxitucheng = false) {
+    getRouteApi(coor1, coor2, isxitucheng = false, bike=false) {
       let token = isxitucheng ? this.xitucheng : this.shahe;
       let obj = {
         uuid: token,
@@ -192,13 +214,15 @@ export default {
         lnt1: coor1[0],
         lat2: coor2[1],
         lnt2: coor2[0],
-        speed: 10.0001,
+        speed: bike ? config.bikespeed : config.walkspeed,
       };
+      if (bike) obj['vehicle']='bike'
       return axios.post(`${config.api}/nav/route`, obj);
     },
   },
   mounted() {
-    setTimeout(() => this.apiInit(), 1000);
+    this.apiInit()
+    // setTimeout(() => this.apiInit(), 1000);
   },
 };
 </script>

@@ -7,8 +7,8 @@
       }"
       v-if="!navi"
     >
-      <el-tabs class="route-tabs" type="border-card" tab-position="top">
-        <el-tab-pane v-if="!isbus">
+      <el-tabs v-model="active" class="route-tabs" type="border-card" tab-position="top" @tab-click="handleclick">
+        <el-tab-pane v-if="!isbus" name="walk">
           <template #label>
             <span><i class="el-icon-user"></i> 步行</span>
           </template>
@@ -38,7 +38,7 @@
             <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
           </div>
         </el-tab-pane>
-        <el-tab-pane v-if="!isbus">
+        <el-tab-pane v-if="!isbus" name="bike">
           <template #label>
             <span><i class="el-icon-bicycle"></i> 骑行</span>
           </template>
@@ -68,7 +68,7 @@
             <el-button @click="startnavi" type="primary">开始导航</el-button>
           </div>
         </el-tab-pane>
-        <el-tab-pane v-if="isbus">
+        <el-tab-pane v-if="isbus" name="bus">
           <template #label>
             <span><i class="el-icon-truck"></i> 公交</span>
           </template>
@@ -81,8 +81,8 @@
                   <span>最短路径</span>
                 </div>
               </template>
-              <div class="text">用时: {{ timeShortest }}s</div>
-              <div class="text">距离: {{ distanceShortest }}m</div>
+              <div class="text">行走用时: {{ timeShortest }}s</div>
+              <div class="text">行走距离: {{ distanceShortest }}m</div>
             </el-card>
             <el-card shadow="hover" class="tab-card" @click="fastest">
               <template #header>
@@ -90,8 +90,8 @@
                   <span>最短时间</span>
                 </div>
               </template>
-              <div class="text">用时: {{ timeFastest }}s</div>
-              <div class="text">距离: {{ distanceFastest }}m</div>
+              <div class="text">行走用时: {{ timeFastest }}s</div>
+              <div class="text">行走距离: {{ distanceFastest }}m</div>
             </el-card>
           </div>
           <div>
@@ -129,7 +129,7 @@ export default {
     routing: Object,
   },
   name: "show-route",
-  emits: ["clear-route", "shortest", "fastest", "start-navi", "end-navi"],
+  emits: ["clear-route", "shortest", "fastest", "start-navi", "end-navi", "bike", "other"],
   setup() {
     const panes = [
       {
@@ -151,6 +151,7 @@ export default {
   },
   data() {
     return {
+      active: "walk",
       navi: false,
       collapsed: false,
       hideIcon: "el-icon-arrow-left",
@@ -190,6 +191,12 @@ export default {
     },
   },
   methods: {
+    handleclick() {
+      if (this.active === "bike")
+        this.$emit('bike')
+      else
+        this.$emit('other')
+    },
     startnavi() {
       this.$emit('start-navi')
       this.navi=true
