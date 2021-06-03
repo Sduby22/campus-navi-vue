@@ -21,8 +21,18 @@
     @fastest="fastest"
   />
   <div style="position: fixed; z-index: -1">
-    <bupt-map @choose-point="choosePoint" :routing="routing" :start="naviing" @stop-navi="stopNavi"/>
+    <bupt-map @choose-point="choosePoint" :routing="routing" :start="naviing" @stop-navi="stopNavi" @dbl="dblclick"/>
   </div>
+  <el-card class="box-card" v-show="list.length">
+  <template #header>
+    <div class="card-header">
+      <span>附近</span>
+    </div>
+  </template>
+  <div v-for="o of list" :key="o" class="text-item" @click="setDest(o.name).then(() => getRoute())">
+    <i class="el-icon-location-outline" /> {{ o.name }} {{Math.floor(o.distance)}}m
+  </div>
+</el-card>
 </template>
 
 <script>
@@ -42,6 +52,7 @@ export default {
   },
   data() {
     return {
+      list: [],
       naviing: false,
       selected: {},
       routing: {
@@ -61,6 +72,44 @@ export default {
     },
   },
   methods: {
+    dblclick() {
+      console.log("用户查询当前位置的周边建筑")
+      let getApi = async (coor1, coor2) => { return (await this.getRouteApi(coor1,coor2,coor1[1]<40)).data }
+      let thisgeo = this.routing.beg.geo
+      class Pos {
+        constructor(geo, name) {
+          this.geo = geo
+          this.name = name
+          this.done = this.getdistance()
+        }
+        getdistance() {
+          return getApi(thisgeo, this.geo).then(
+            data => { this.distance = data.data.shortest.distance }
+          )
+        }
+      }
+      const getPosList = () => {
+        const radius = 0.001
+        let list = []
+        for (let x of Object.keys(buptPoints)) {
+          let min_lnt = thisgeo[0] - radius
+          let max_lnt = thisgeo[0] + radius
+          let min_lat = thisgeo[1] - radius
+          let max_lat = thisgeo[1] + radius
+          if (min_lnt < buptPoints[x][0] && buptPoints[x][0] < max_lnt 
+              && min_lat < buptPoints[x][1] && buptPoints[x][1] < max_lat) {
+            list.push(new Pos(buptPoints[x], x))
+          }
+        }
+        return list
+      }
+      
+      let list = getPosList()
+      let h
+      Promise.allSettled(list.map(x=>x.done)).then(()=>{
+        this.list = list.filter(x => 'distance' in x)
+      })
+    },
     async stopNavi(x, y, isshahe) {
       this.naviing = false;
       if (x&&y) {
@@ -108,6 +157,7 @@ export default {
       return [data.data.x, data.data.y];
     },
     async choosePoint(p) {
+      this.list.length = 0
       if (this.routing.data.length != 0) return
       console.log('用户手动选择起点');
       let geo = await this.pixeltoGeo(p)
@@ -136,10 +186,9 @@ export default {
     },
     async setPass(pass) {
       console.log(`用户输入途径点: ${pass}`);
-      let coors = pass.map(x=>buptPoints[x])
       let x = await Promise.all(
-        coors.map(async (x) => {
-          return { geo: buptPoints[x], coor: await this.geotoPixel(x), isshahe: x[1] > 40 };
+        pass.map(async (x) => {
+          return { geo: buptPoints[x], coor: await this.geotoPixel(buptPoints[x]), isshahe: buptPoints[x][1] > 40 };
         })
       );
       this.routing.pass = x;
@@ -240,5 +289,13 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+}
+
+.box-card {
+  float: right;
+}
+
+.text-item {
+  text-align: left;
 }
 </style>

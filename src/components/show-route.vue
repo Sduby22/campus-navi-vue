@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="width: 1px; height: 1px">
     <div
       :class="{
         'route-tabs-parent': true,
@@ -64,8 +64,8 @@
               <div class="text">距离: {{ distanceFastest }}m</div>
             </el-card>
           </div>
-          <div>
-            <el-button @click="startnavi" type="primary">开始导航</el-button>
+          <div style="text-align:center">
+            <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
           </div>
         </el-tab-pane>
         <el-tab-pane v-if="isbus" name="bus">
@@ -94,8 +94,14 @@
               <div class="text">行走距离: {{ distanceFastest }}m</div>
             </el-card>
           </div>
-          <div>
-            <el-button @click="startnavi" type="primary">开始导航</el-button>
+            <div class="bus-schedule">
+              <p>校车时刻表: 9:00 11:00 13:00 15:00 17:00</p>
+            </div>
+            <div class="bus-schedule">
+              <p>公交车每15分钟发车一辆</p>
+            </div>
+          <div style="text-align:center">
+            <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -274,5 +280,11 @@ export default {
   position: fixed;
   bottom: 20px;
   left: 50px;
+}
+
+.bus-schedule > p {
+  font-size: 14px;
+  margin-bottom:0;
+  margin-top:5px;
 }
 </style>

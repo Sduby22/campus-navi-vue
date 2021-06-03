@@ -6,10 +6,11 @@
       @mousemove="setmove"
       @mouseup="choosePoint"
       @wheel="wheelZoom"
+      @dblclick="dblclick"
     />
   </div>
   <div class="bottom-tool">
-    <div style="width: 30px">
+    <div style="width: 30px;margin: 0 0 20px auto">
       <el-slider v-model="speed" vertical :max="600" :min="6" height="200px">
       </el-slider>
     </div>
@@ -41,7 +42,7 @@ export default {
     routing: Object,
     start: Boolean,
   },
-  emits: ['choose-point', 'stop-navi'],
+  emits: ['choose-point', 'stop-navi', 'dbl'],
   setup(props, {emit}) {
     const color_map = [
       "#d62700",
@@ -254,6 +255,10 @@ export default {
     var dragging = false
     const setdown = () => {
       dragging = false
+    }
+
+    const dblclick = () => {
+      emit('dbl')
     }
 
     const choosePoint = (e) => {
@@ -509,14 +514,12 @@ export default {
     })
 
     return {
+      dblclick,
       speed,
-      LineImg,
       choosePoint,
       wheelZoom,
       currentMap,
       switchButton,
-      buptimg1,
-      buptimg2,
       setdown,
       setmove,
     };
@@ -552,4 +555,5 @@ export default {
   bottom: 20px;
   right: 20px;
 }
+
 </style>
