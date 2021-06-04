@@ -8,7 +8,7 @@
       v-if="!navi"
     >
       <el-tabs v-model="active" class="route-tabs" type="border-card" tab-position="top" @tab-click="handleclick">
-        <el-tab-pane v-if="!isbus" name="walk">
+        <el-tab-pane v-if="!bus" name="walk">
           <template #label>
             <span><i class="el-icon-user"></i> 步行</span>
           </template>
@@ -21,7 +21,7 @@
                   <span>最短路径</span>
                 </div>
               </template>
-              <div class="text">用时: {{ timeShortest }}s</div>
+              <div class="text">用时: {{ secondsToHms(timeShortest) }}</div>
               <div class="text">距离: {{ distanceShortest }}m</div>
             </el-card>
             <el-card shadow="hover" class="tab-card" @click="fastest">
@@ -30,15 +30,15 @@
                   <span>最短时间</span>
                 </div>
               </template>
-              <div class="text">用时: {{ timeFastest }}s</div>
+              <div class="text">用时: {{ secondsToHms(timeFastest) }}</div>
               <div class="text">距离: {{ distanceFastest }}m</div>
             </el-card>
           </div>
           <div style="text-align:center">
-            <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
+            <el-button @click="startnavi" type="primary" :disabled="routing.path.length===0" style="margin:20px 0 0 0">开始导航</el-button>
           </div>
         </el-tab-pane>
-        <el-tab-pane v-if="!isbus" name="bike">
+        <el-tab-pane v-if="!bus" name="bike">
           <template #label>
             <span><i class="el-icon-bicycle"></i> 骑行</span>
           </template>
@@ -51,7 +51,7 @@
                   <span>最短路径</span>
                 </div>
               </template>
-              <div class="text">用时: {{ timeShortest }}s</div>
+              <div class="text">用时: {{ secondsToHms(timeShortest) }}</div>
               <div class="text">距离: {{ distanceShortest }}m</div>
             </el-card>
             <el-card shadow="hover" class="tab-card" @click="fastest">
@@ -60,15 +60,15 @@
                   <span>最短时间</span>
                 </div>
               </template>
-              <div class="text">用时: {{ timeFastest }}s</div>
+              <div class="text">用时: {{ secondsToHms(timeFastest) }}</div>
               <div class="text">距离: {{ distanceFastest }}m</div>
             </el-card>
           </div>
           <div style="text-align:center">
-            <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
+            <el-button @click="startnavi" type="primary" :disabled="routing.path.length===0" style="margin:20px 0 0 0">开始导航</el-button>
           </div>
         </el-tab-pane>
-        <el-tab-pane v-if="isbus" name="bus">
+        <el-tab-pane v-if="bus" name="bus">
           <template #label>
             <span><i class="el-icon-truck"></i> 公交</span>
           </template>
@@ -81,7 +81,7 @@
                   <span>最短路径</span>
                 </div>
               </template>
-              <div class="text">行走用时: {{ timeShortest }}s</div>
+              <div class="text">行走用时: {{ secondsToHms(timeShortest) }}</div>
               <div class="text">行走距离: {{ distanceShortest }}m</div>
             </el-card>
             <el-card shadow="hover" class="tab-card" @click="fastest">
@@ -90,7 +90,7 @@
                   <span>最短时间</span>
                 </div>
               </template>
-              <div class="text">行走用时: {{ timeFastest }}s</div>
+              <div class="text">行走用时: {{ secondsToHms(timeFastest) }}</div>
               <div class="text">行走距离: {{ distanceFastest }}m</div>
             </el-card>
           </div>
@@ -101,7 +101,7 @@
               <p>公交车每15分钟发车一辆</p>
             </div>
           <div style="text-align:center">
-            <el-button @click="startnavi" type="primary" style="margin:20px 0 0 0">开始导航</el-button>
+            <el-button @click="startnavi" type="primary" :disabled="routing.path.length===0" style="margin:20px 0 0 0">开始导航</el-button>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -164,18 +164,24 @@ export default {
     };
   },
   computed: {
-    isbus() {
+    bus() {
       let list = this.routing.data.map(x=>x.shahe)
-      let f = list.reduce((old,cur)=>{ if(old===cur) return old; else return 'false' })
-      if (f === 'false')
-        return true
-      else return false
+      let change = 0;
+      list.reduce((old,cur)=>{ 
+        if(old===cur) {
+          return old;
+        } else {
+          change+=1
+          return cur
+        } 
+      })
+      return change
     },
     timeShortest() {
       return this.routing.data.reduce(
         (old, cur) => Math.floor(old + cur["shortest"].time),
         0
-      );
+      )+this.bus*3600;
     },
     distanceShortest() {
       return this.routing.data.reduce(
@@ -187,7 +193,7 @@ export default {
       return this.routing.data.reduce(
         (old, cur) => Math.floor(old + cur["fastest"].time),
         0
-      );
+      )+this.bus*3600;
     },
     distanceFastest() {
       return this.routing.data.reduce(
@@ -197,6 +203,17 @@ export default {
     },
   },
   methods: {
+    secondsToHms(d) {
+      d = Number(d);
+      var h = Math.floor(d / 3600);
+      var m = Math.floor(d % 3600 / 60);
+      var s = Math.floor(d % 3600 % 60);
+
+      var hDisplay = h > 0 ? h + "小时" : "";
+      var mDisplay = m > 0 ? m + "分" : "";
+      var sDisplay = s > 0 ? s + "秒" : "";
+      return hDisplay + mDisplay + sDisplay; 
+    },
     handleclick() {
       if (this.active === "bike")
         this.$emit('bike')

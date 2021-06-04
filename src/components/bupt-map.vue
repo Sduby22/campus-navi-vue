@@ -471,7 +471,13 @@ export default {
               // finished navi
             } else {
               currmap.directions.length = 0
-              currmap = props.routing.path[currPathObj].shahe ? map2 : map1
+              if (props.routing.path[currPathObj].shahe) {
+                currmap = map2
+                switchMap(map2)
+              } else {
+                currmap = map1
+                switchMap(map1)
+              }
               currPath = currmap.lines[currmap.currIndex]
               currmap.directions.push(new DirectionImg(currPath._x1, currPath._x2))
               curMax = props.routing.path[currPathObj].path.length

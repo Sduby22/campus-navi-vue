@@ -29,7 +29,7 @@
       <span>附近</span>
     </div>
   </template>
-  <div v-for="o of list" :key="o" class="text-item" @click="setDest(o.name).then(() => getRoute())">
+  <div v-for="o of list" :key="o" class="text-item" @click="setDest(o.name).then(() => { list.length=0 ;getRoute() })">
     <i class="el-icon-location-outline" /> {{ o.name }} {{Math.floor(o.distance)}}m
   </div>
 </el-card>
@@ -105,7 +105,6 @@ export default {
       }
       
       let list = getPosList()
-      let h
       Promise.allSettled(list.map(x=>x.done)).then(()=>{
         this.list = list.filter(x => 'distance' in x)
       })

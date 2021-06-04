@@ -30,9 +30,10 @@
       <li
         v-for="(x, index) in stringQuery"
         :key="index"
-        @click="changeInput(x), getRoute()"
+        @click="changeInput(x.value);route=true"
+        :style="x.style"
       >
-        <i class="el-icon-location-outline" />{{ x }}
+        <i class="el-icon-location-outline"/>{{ x.name }}
       </li>
     </div>
   </el-card>
@@ -118,14 +119,14 @@
         >规划路线</el-button
       >
     </template>
-    <li
-      v-show="cardShow"
-      v-for="(x, index) in stringQuery"
-      :key="index"
-      @click="changeInput(x)"
-    >
-      <i class="el-icon-location-outline" />{{ x }}
-    </li>
+      <li
+        v-for="(x, index) in stringQuery"
+        :key="index"
+        @click="changeInput(x.value);route=true"
+        :style="x.style"
+      >
+        <i class="el-icon-location-outline"/>{{ x.name }}
+      </li>
   </el-card>
 </template>
 
@@ -180,22 +181,36 @@ export default {
       return !this.currentInput.selected && this.currentInput.value
     },
     stringQuery() {
-      function shuffle(arr) {
-          var array = arr;
-          var m = array.length,
-              t, i;
-          while (m) {
-              i = Math.floor(Math.random() * m--);
-              t = array[m];
-              array[m] = array[i];
-              array[i] = t;
-          }
-          return array;
-      }
       if (!this.currentInput.value) return null;
       let names = Object.keys(buptPoints);
-      let result = names.filter((x) => {return x.includes(this.currentInput.value)})
-      if (this.currentInput.value === '食堂') result = shuffle(result)
+      const getlist = (str) => {return names.filter((x) => {return x.includes(str)}).map(x=> { return {value:x,name:x} })}
+      let result;
+      var ds = /(\d*)班-(.*)课(-.*)?/
+      let match = this.currentInput.value.match(ds)
+      if (match) {
+        let number = parseInt(match[1])
+        let list = getlist('教学楼')
+        result = [list[number%list.length]]
+      } else {
+        result = getlist(this.currentInput.value)
+        if (this.currentInput.value === '食堂') {
+          const color_map= [
+            "#00b51b",
+            "#97b500",
+            "#c9bb34",
+            "#d18726",
+            "#d14826",
+          ]
+          result = result.map(x => {
+            let load = Math.random()
+            let color = Math.ceil(load*5)-1
+            color = color_map[color]
+            x.name = x.value + ` 负载: ${load.toString().slice(0,4)}`
+            return {...x, load, style: {color: color}}
+          })
+        }       
+        result.sort((x,y) => x.load-y.load)
+      }
       return result
       // return [this.currentInput.value, "aaa"];
     },
@@ -223,7 +238,7 @@ export default {
     },
     checkInput() {
       this.currentInput.selected = false
-      if(this.currentInput.value && (this.currentInput.value === this.stringQuery[0])) {
+      if(this.currentInput.value && this.stringQuery.length && (this.currentInput.value === this.stringQuery[0].value)) {
         this.currentInput.legal = true
         this.setpoints(this.currentInput.type)
       }
@@ -241,7 +256,6 @@ export default {
       this.currentInput.selected = true;
     },
     getRoute() {
-      let pass = this.route ? this.passby.map(x=>x.value) : []
       this.$emit('get-route')
     }
   },
