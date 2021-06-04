@@ -602,7 +602,7 @@ export default {
 }
 
 .row {
-  width: 200px;
+  width: 150px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

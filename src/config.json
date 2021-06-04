@@ -1,5 +1,5 @@
 {
-    "api": "https://kreedz.jnn.icu/java",
+    "api": "http://localhost:33332",
     "bikespeed": 10.0001,
     "walkspeed": 5.0001
 }
