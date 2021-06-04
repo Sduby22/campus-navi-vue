@@ -400,6 +400,7 @@ export default {
         else {
           line = new LineImg( x1, y1, x2, y2 )
         }
+        line.name = data.path[x].name
         line.capacity = data.path[x].capacity
         line.color = color_map[Math.ceil(data.path[x].capacity*5)-1]
         if (data.shahe) {
