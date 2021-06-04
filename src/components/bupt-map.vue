@@ -9,7 +9,7 @@
       @dblclick="dblclick"
     />
   </div>
-  <div class="bottom-tool">
+  <div class="bottom-right">
     <div style="width: 30px;margin: 0 0 20px auto">
       <el-slider v-model="speed" vertical :max="600" :min="6" height="200px">
       </el-slider>
@@ -17,6 +17,17 @@
     <el-button type="primary" size="medium" @click="switchButton"
       >切换到{{ currentMap }}</el-button
     >
+  </div>
+  <div class="bottom-left" v-show="start">
+    <el-card>
+      <div style="display: flex">
+        <div class="row">
+          <p class="smalltitle">当前道路: </p>
+          <p class="roadname">{{ currPathName }}</p>
+        </div>
+        <el-button type="text" @click="stopbtn">停止导航</el-button>
+      </div>
+    </el-card>
   </div>
 </template>
 
@@ -55,6 +66,7 @@ export default {
     const maxScale = 1.7
     var canvas = null;
     var ctx = null;
+    let stopping = 0
 
     class canvasImage {
       constructor(src, x = 0, y = 0, scale = 1) {
@@ -401,8 +413,20 @@ export default {
     var speed = ref(6)
     let time;
     let currPath, currPathObj
+    let currPathName = ref("")
     let currmap
     let curMax
+
+    let oldpath
+    const changepath = (path) => {
+      currPath = path
+      currPathName.value = path.name || '未知道路'
+      if (oldpath !== currPathName.value) {
+        oldpath = currPathName.value
+        console.log(`从${oldpath}到${currPathName.value}`);
+      }
+    }
+
     const stopNavi = () => {
       if (time)
         console.log("导航中止");
@@ -421,6 +445,10 @@ export default {
     var i = 0
     let startTime = 0;
     const step = (currentTime) => {
+      if (stopping===1) {
+        stopNavi()
+        return 
+      }
       let speedv = speed.value * props.routing.speed
       if (!time && props.start) {
         console.log("导航开始");
@@ -428,7 +456,7 @@ export default {
         time = currentTime
         startTime = currentTime
         currmap = props.routing.path[0].shahe ? map2 : map1
-        currPath = currmap.lines[0]
+        changepath(currmap.lines[0])
         map1.currIndex = 0
         map2.currIndex = 0
         curMax = props.routing.path[0].path.length
@@ -478,24 +506,22 @@ export default {
                 currmap = map1
                 switchMap(map1)
               }
-              currPath = currmap.lines[currmap.currIndex]
+              changepath(currmap.lines[currmap.currIndex])
               currmap.directions.push(new DirectionImg(currPath._x1, currPath._x2))
               curMax = props.routing.path[currPathObj].path.length
               i = 0
             }
           } else {
-            currPath = currmap.lines[currmap.currIndex]
+            changepath(currmap.lines[currmap.currIndex])
           }
         } 
       }
       draw()
-      if (props.start)
-        requestAnimationFrame(step)
-      else
-        stopNavi()
+      requestAnimationFrame(step)
     }
 
     const startNavi = () => {
+      stopping = 0
       requestAnimationFrame(step)
     }
 
@@ -518,8 +544,15 @@ export default {
       props.routing.path.forEach(x => setLines(x))
       draw()
     })
+    
+    const stopbtn = () => {
+      stopping = 1
+    }
 
     return {
+      currPathName,
+      stopbtn,
+      stopNavi,
       dblclick,
       speed,
       choosePoint,
@@ -556,10 +589,34 @@ export default {
   left: 50vw;
 }
 
-.bottom-tool {
+.bottom-right {
   position: fixed;
   bottom: 20px;
   right: 20px;
+}
+
+.bottom-left {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+}
+
+.row {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.smalltitle {
+  margin: 0;
+  font-size: 10px;
+}
+
+.roadname {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 800;
 }
 
 </style>

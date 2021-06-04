@@ -11,6 +11,7 @@
   <show-route
     class="fixed"
     v-if="!isRoutingEmpty"
+    :naviing="naviing"
     :routing="routing"
     @start-navi="naviing = true"
     @end-navi="naviing = false"

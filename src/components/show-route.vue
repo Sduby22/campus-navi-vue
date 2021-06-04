@@ -5,7 +5,7 @@
         'route-tabs-parent': true,
         'route-tabs-parent-collapsed': collapsed,
       }"
-      v-if="!navi"
+      v-if="!naviing"
     >
       <el-tabs v-model="active" class="route-tabs" type="border-card" tab-position="top" @tab-click="handleclick">
         <el-tab-pane v-if="!bus" name="walk">
@@ -123,9 +123,6 @@
         ></el-button>
       </div>
     </div>
-    <div v-if="navi">
-      <el-button type="danger" class="stop-navi" @click="stopnavi" round>停止导航</el-button>
-    </div>
   </div>
 </template>
 
@@ -133,6 +130,7 @@
 export default {
   props: {
     routing: Object,
+    naviing: Boolean
   },
   name: "show-route",
   emits: ["clear-route", "shortest", "fastest", "start-navi", "end-navi", "bike", "other"],
@@ -222,11 +220,9 @@ export default {
     },
     startnavi() {
       this.$emit('start-navi')
-      this.navi=true
     },
     stopnavi() {
       this.$emit('end-navi')
-      this.navi=false
     },
     shortest() {
       this.$emit("shortest");
